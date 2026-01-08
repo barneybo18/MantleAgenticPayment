@@ -1,6 +1,6 @@
 # 🤖 AgentPay - Autonomous Payments on Mantle
 
-![Mantle Network](https://img.shields.io/badge/Network-Mantle_Sepolia-green) 
+![Mantle Network](https://img.shields.io/badge/Network-Mantle-green) 
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Status](https://img.shields.io/badge/Status-Hackathon_MVP-orange)
 
@@ -9,26 +9,29 @@
 ## 🚀 Key Features
 
 - **🧾 Decentralized Invoicing**: Create, track, and pay on-chain invoices with full transparency.
-- **🤖 Autonomous Agents**: configure "agents" to handle recurring payments (payroll, subscriptions) automatically.
-- **⚡ Instant Payments**: Native support for **$MNT** and ERC20 tokens.
+- **🤖 Autonomous Agents**: Configure "agents" to handle recurring payments (payroll, subscriptions) automatically.
+- **💰 Funded Agents**: Agents hold funds directly (MNT or ERC20 tokens) for trustless execution.
+- **⚡ Multi-Token Support**: Native **$MNT**, **USDT**, **USDC**, **mETH**, **WETH**, and more.
 - **📊 Real-time Dashboard**: Track your spending, income, and active agents in one beautiful interface.
-- **🕸️ Network Aware**: Automatically detects Mainnet/Testnet/Local environments.
+- **🔄 Pause/Resume**: Full control over your agents with one-click pause and resume.
+- **🕸️ Network Aware**: Automatically detects Mainnet/Testnet and uses the correct contract.
 
 ## 🛠️ Tech Stack
 
-- **Blockchain**: [Mantle Network](https://www.mantle.xyz/) (Sepolia Testnet)
-- **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
-- **Web3**: [Wagmi](https://wagmi.sh/) + [RainbowKit](https://www.rainbowkit.com/) + [Viem](https://viem.sh/)
-- **Smart Contracts**: Solidity + Hardhat
+| Category | Technology |
+|----------|------------|
+| Blockchain | [Mantle Network](https://www.mantle.xyz/) |
+| Framework | [Next.js 16](https://nextjs.org/) (App Router + Turbopack) |
+| Styling | [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/) |
+| Web3 | [Wagmi](https://wagmi.sh/) + [RainbowKit](https://www.rainbowkit.com/) + [Viem](https://viem.sh/) |
+| Smart Contracts | Solidity 0.8.27 + Hardhat |
 
-## 📜 Smart Contract
+## 📜 Smart Contracts
 
-Deployed on **Mantle Sepolia Testnet**:
-```
-0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3
-```
-[View on Explorer](https://sepolia.mantlescan.xyz/address/0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3)
+| Network | Address | Explorer |
+|---------|---------|----------|
+| **Mantle Mainnet** | `0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3` | [View](https://mantlescan.xyz/address/0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3) |
+| **Mantle Sepolia** | `0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8` | [View](https://sepolia.mantlescan.xyz/address/0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8) |
 
 ## 📦 Installation
 
@@ -55,11 +58,27 @@ Deployed on **Mantle Sepolia Testnet**:
    ```
    Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-## 🧪 Deployment
+## 🤖 Running the Agent Worker
 
-To deploy the smart contracts to Mantle Sepolia:
+The worker script executes due payments automatically:
 
 ```bash
+# For Mainnet
+npx hardhat run scripts/worker.js --network mantle
+
+# For Testnet
+npx hardhat run scripts/worker.js --network mantleSepolia
+```
+
+## 🧪 Deployment
+
+To deploy the smart contracts:
+
+```bash
+# Deploy to Mainnet
+npx hardhat run scripts/deploy.js --network mantle
+
+# Deploy to Sepolia Testnet
 npx hardhat run scripts/deploy.js --network mantleSepolia
 ```
 
@@ -68,6 +87,22 @@ npx hardhat run scripts/deploy.js --network mantleSepolia
 - **Ownable**: Contract ownership for administrative control.
 - **ReentrancyGuard**: Protected against reentrancy attacks.
 - **Non-Custodial**: Users verify all transactions via their wallet.
+- **Funded Agents**: Agents hold their own funds - no approvals needed at execution time.
+
+## 📁 Project Structure
+
+```
+├── app/                    # Next.js App Router pages
+│   └── (app)/              # Main application routes
+│       ├── agents/         # Agent management
+│       ├── invoices/       # Invoice management
+│       └── dashboard/      # User dashboard
+├── components/             # React components
+├── contracts/              # Solidity smart contracts
+├── hooks/                  # Custom React hooks
+├── lib/                    # Utilities and contract config
+└── scripts/                # Deployment and automation scripts
+```
 
 ---
 

@@ -1,28 +1,31 @@
-"use client";
-
 import { useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
-import { AGENT_PAY_ABI, CONTRACT_CONFIG } from "@/lib/contracts";
+import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from "@/lib/contracts";
 
-export function usePayInvoice() {
+export function useDeleteAgent() {
     const { writeContract, data: hash, isPending: isWritePending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
     const chainId = useChainId();
 
-    const payInvoice = async (invoiceId: bigint, amount: bigint) => {
+    const deleteAgent = async (id: bigint) => {
         const config = CONTRACT_CONFIG[chainId];
-        if (!config?.address) throw new Error("Contract not deployed on this chain");
+        const address = config?.address;
+
+        if (!address || address === NATIVE_TOKEN) {
+            console.error("Contract not deployed on this chain");
+            return;
+        }
 
         writeContract({
-            address: config.address,
+            address: address,
             abi: AGENT_PAY_ABI,
-            functionName: "payInvoice",
-            args: [invoiceId],
-            value: amount
+            functionName: "cancelScheduledPayment",
+            args: [id],
+            gas: 500000n // Manual gas override to prevent "gas limit too low" error
         });
     };
 
     return {
-        payInvoice,
+        deleteAgent,
         hash,
         isPending: isWritePending || isConfirming,
         isSuccess,

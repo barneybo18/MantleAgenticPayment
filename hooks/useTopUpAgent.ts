@@ -1,28 +1,30 @@
 "use client";
 
 import { useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
-import { AGENT_PAY_ABI, CONTRACT_CONFIG } from "@/lib/contracts";
+import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from "@/lib/contracts";
 
-export function usePayInvoice() {
+export function useTopUpAgent() {
     const { writeContract, data: hash, isPending: isWritePending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
     const chainId = useChainId();
 
-    const payInvoice = async (invoiceId: bigint, amount: bigint) => {
+    const topUpAgent = async (id: bigint, amount: bigint, tokenAmount: bigint = 0n) => {
         const config = CONTRACT_CONFIG[chainId];
-        if (!config?.address) throw new Error("Contract not deployed on this chain");
+        const address = config?.address;
+
+        if (!address || address === NATIVE_TOKEN) return;
 
         writeContract({
-            address: config.address,
+            address: address,
             abi: AGENT_PAY_ABI,
-            functionName: "payInvoice",
-            args: [invoiceId],
+            functionName: "topUpAgent",
+            args: [id, tokenAmount],
             value: amount
         });
     };
 
     return {
-        payInvoice,
+        topUpAgent,
         hash,
         isPending: isWritePending || isConfirming,
         isSuccess,

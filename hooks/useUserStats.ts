@@ -1,7 +1,7 @@
 "use client";
 
-import { useReadContract, useBalance } from "wagmi";
-import { AGENT_PAY_ABI, AGENT_PAY_ADDRESS, UserStats } from "@/lib/contracts";
+import { useReadContract, useBalance, useChainId } from "wagmi";
+import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN, UserStats } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 
@@ -16,6 +16,10 @@ const QUERY_CONFIG = {
 
 export function useUserStats() {
     const { address } = useAccount();
+    const chainId = useChainId();
+    const config = CONTRACT_CONFIG[chainId];
+    const contractAddress = config?.address;
+    const isContractAvailable = contractAddress && contractAddress !== NATIVE_TOKEN;
 
     const { data: balance } = useBalance({
         address: address,
@@ -23,11 +27,11 @@ export function useUserStats() {
     });
 
     const { data: statsData, isLoading, refetch } = useReadContract({
-        address: AGENT_PAY_ADDRESS,
+        address: contractAddress,
         abi: AGENT_PAY_ABI,
         functionName: "getUserStats",
         args: address ? [address] : undefined,
-        query: { enabled: !!address, ...QUERY_CONFIG }
+        query: { enabled: !!address && !!isContractAvailable, ...QUERY_CONFIG }
     });
 
     const stats: UserStats | undefined = statsData ? {

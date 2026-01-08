@@ -1,7 +1,7 @@
 "use client";
 
-import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { AGENT_PAY_ABI, AGENT_PAY_ADDRESS, ScheduledPayment } from "@/lib/contracts";
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
+import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN, ScheduledPayment } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 import { parseEther } from "viem";
 
@@ -16,17 +16,21 @@ const QUERY_CONFIG = {
 
 export function useScheduledPayments() {
     const { address } = useAccount();
+    const chainId = useChainId();
+    const config = CONTRACT_CONFIG[chainId];
+    const contractAddress = config?.address;
+    const isContractAvailable = contractAddress && contractAddress !== NATIVE_TOKEN;
 
     const { data: paymentIds, isLoading: loadingIds, refetch: refetchIds } = useReadContract({
-        address: AGENT_PAY_ADDRESS,
+        address: contractAddress,
         abi: AGENT_PAY_ABI,
         functionName: "getUserScheduledPayments",
         args: address ? [address] : undefined,
-        query: { enabled: !!address, ...QUERY_CONFIG }
+        query: { enabled: !!address && !!isContractAvailable, ...QUERY_CONFIG }
     });
 
     const paymentQueries = (paymentIds || []).map((id) => ({
-        address: AGENT_PAY_ADDRESS as `0x${string}`,
+        address: contractAddress!,
         abi: AGENT_PAY_ABI,
         functionName: "getScheduledPayment" as const,
         args: [id] as const
@@ -34,7 +38,7 @@ export function useScheduledPayments() {
 
     const { data: paymentsData, isLoading: loadingPayments, refetch: refetchPayments } = useReadContracts({
         contracts: paymentQueries,
-        query: { enabled: (paymentIds?.length || 0) > 0, ...QUERY_CONFIG }
+        query: { enabled: (paymentIds?.length || 0) > 0 && !!isContractAvailable, ...QUERY_CONFIG }
     });
 
     const payments: ScheduledPayment[] = paymentsData
@@ -42,8 +46,10 @@ export function useScheduledPayments() {
         .map((r) => r.result as ScheduledPayment) || [];
 
     const refetch = () => {
-        refetchIds();
-        refetchPayments();
+        if (isContractAvailable) {
+            refetchIds();
+            refetchPayments();
+        }
     };
 
     return {
@@ -57,6 +63,7 @@ export function useScheduledPayments() {
 export function useCreateScheduledPayment() {
     const { writeContract, data: hash, isPending: isWritePending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+    const chainId = useChainId();
 
     const createScheduledPayment = async (
         to: string,
@@ -65,13 +72,16 @@ export function useCreateScheduledPayment() {
         intervalSeconds: number,
         description: string
     ) => {
+        const config = CONTRACT_CONFIG[chainId];
+        if (!config?.address) throw new Error("Contract not deployed on this chain");
+
         const tokenAddr = token === "MNT" || token === "Native" || token === ""
             ? "0x0000000000000000000000000000000000000000"
             : token;
         const amountWei = parseEther(amount);
 
         writeContract({
-            address: AGENT_PAY_ADDRESS,
+            address: config.address,
             abi: AGENT_PAY_ABI,
             functionName: "createScheduledPayment",
             args: [
@@ -79,7 +89,8 @@ export function useCreateScheduledPayment() {
                 amountWei,
                 tokenAddr as `0x${string}`,
                 BigInt(intervalSeconds),
-                description
+                description,
+                0n // initialTokenDeposit
             ],
             value: tokenAddr === "0x0000000000000000000000000000000000000000" ? amountWei : 0n
         });
@@ -97,10 +108,14 @@ export function useCreateScheduledPayment() {
 export function useCancelScheduledPayment() {
     const { writeContract, data: hash, isPending, error } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+    const chainId = useChainId();
 
     const cancelPayment = async (id: bigint) => {
+        const config = CONTRACT_CONFIG[chainId];
+        if (!config?.address) throw new Error("Contract not deployed on this chain");
+
         writeContract({
-            address: AGENT_PAY_ADDRESS,
+            address: config.address,
             abi: AGENT_PAY_ABI,
             functionName: "cancelScheduledPayment",
             args: [id]
@@ -118,10 +133,14 @@ export function useCancelScheduledPayment() {
 export function useExecuteScheduledPayment() {
     const { writeContract, data: hash, isPending, error } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+    const chainId = useChainId();
 
     const executePayment = async (id: bigint) => {
+        const config = CONTRACT_CONFIG[chainId];
+        if (!config?.address) throw new Error("Contract not deployed on this chain");
+
         writeContract({
-            address: AGENT_PAY_ADDRESS,
+            address: config.address,
             abi: AGENT_PAY_ABI,
             functionName: "executeScheduledPayment",
             args: [id]

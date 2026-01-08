@@ -4,21 +4,49 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Plus, Loader2, FileText } from "lucide-react";
+import { Plus, Loader2, FileText, CheckCircle, Share2, Eye, XCircle, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useInvoices } from "@/hooks/useInvoices";
 import { usePayInvoice } from "@/hooks/usePayInvoice";
+import { useCancelInvoice } from "@/hooks/useCancelInvoice";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
+import { formatId } from "@/lib/utils";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { InvoiceTableSkeleton } from "@/components/InvoiceTableSkeleton";
+import { InvoiceDetailModal } from "@/components/InvoiceDetailModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { Invoice } from "@/lib/contracts";
+import { useSearchParams } from "next/navigation";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export default function InvoicesPage() {
+function InvoicesContent() {
     const { isConnected, address } = useAccount();
     const { invoices, isLoading, refetch } = useInvoices();
     const { payInvoice, isPending: paying } = usePayInvoice();
+    const { cancelInvoice, isPending: cancelling } = useCancelInvoice();
     const [payingId, setPayingId] = useState<bigint | null>(null);
+    const [cancellingId, setCancellingId] = useState<bigint | null>(null);
+    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const searchParams = useSearchParams();
+
+    // Handle invoice ID from URL query params (for shared invoices)
+    useEffect(() => {
+        const invoiceIdParam = searchParams.get('id');
+        if (invoiceIdParam && invoices.length > 0) {
+            const invoice = invoices.find(inv => inv.id.toString() === invoiceIdParam);
+            if (invoice) {
+                setSelectedInvoice(invoice);
+            }
+        }
+    }, [searchParams, invoices]);
 
     const handlePay = async (invoiceId: bigint, amount: bigint) => {
         setPayingId(invoiceId);
@@ -28,9 +56,47 @@ export default function InvoicesPage() {
             setTimeout(() => {
                 refetch();
                 setPayingId(null);
+                setSelectedInvoice(null);
             }, 2000);
         } catch (e) {
             setPayingId(null);
+        }
+    };
+
+    const handleCancel = async (invoiceId: bigint) => {
+        setCancellingId(invoiceId);
+        try {
+            await cancelInvoice(invoiceId);
+            // Wait a bit for tx to confirm then refetch
+            setTimeout(() => {
+                refetch();
+                setCancellingId(null);
+                setSelectedInvoice(null);
+            }, 2000);
+        } catch (e) {
+            setCancellingId(null);
+        }
+    };
+
+    const copyShareLink = (invoiceId: bigint) => {
+        const shareUrl = `${window.location.origin}/invoices/${invoiceId.toString()}`;
+        navigator.clipboard.writeText(shareUrl);
+        setCopiedId(invoiceId.toString());
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const parseMetadata = (metadataHash: string) => {
+        try {
+            const parsed = JSON.parse(metadataHash);
+            return {
+                name: parsed.name || null,
+                description: parsed.description || '',
+            };
+        } catch {
+            return {
+                name: null,
+                description: metadataHash,
+            };
         }
     };
 
@@ -108,10 +174,10 @@ export default function InvoicesPage() {
                                     <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Type</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Counterparty</TableHead>
+                                    <TableHead>Payee</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Due Date</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -119,6 +185,8 @@ export default function InvoicesPage() {
                                     const status = getStatus(invoice);
                                     const isCreator = invoice.creator.toLowerCase() === address?.toLowerCase();
                                     const canPay = !invoice.paid && !isCreator;
+                                    const canCancel = !invoice.paid && isCreator;
+                                    const metadata = parseMetadata(invoice.metadataHash);
 
                                     return (
                                         <motion.tr
@@ -126,9 +194,10 @@ export default function InvoicesPage() {
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            className="border-b transition-colors hover:bg-muted/50"
+                                            className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
+                                            onClick={() => setSelectedInvoice(invoice)}
                                         >
-                                            <TableCell className="font-mono text-xs">#{invoice.id.toString()}</TableCell>
+                                            <TableCell className="font-mono text-xs">{formatId(invoice.id)}</TableCell>
                                             <TableCell>
                                                 <Badge variant={isCreator ? "secondary" : "outline"}>
                                                     {isCreator ? 'Sent' : 'Received'}
@@ -137,34 +206,96 @@ export default function InvoicesPage() {
                                             <TableCell>
                                                 <Badge variant={status.variant}>{status.label}</Badge>
                                             </TableCell>
-                                            <TableCell className="font-mono text-xs">
-                                                {isCreator
-                                                    ? `${invoice.recipient.slice(0, 6)}...${invoice.recipient.slice(-4)}`
-                                                    : `${invoice.creator.slice(0, 6)}...${invoice.creator.slice(-4)}`
-                                                }
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    {metadata.name && (
+                                                        <span className="font-medium text-sm">{metadata.name}</span>
+                                                    )}
+                                                    <span className="font-mono text-xs text-muted-foreground">
+                                                        {isCreator
+                                                            ? `${invoice.recipient.slice(0, 6)}...${invoice.recipient.slice(-4)}`
+                                                            : `${invoice.creator.slice(0, 6)}...${invoice.creator.slice(-4)}`
+                                                        }
+                                                    </span>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="font-medium">
                                                 {formatEther(invoice.amount)} MNT
                                             </TableCell>
                                             <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                                             <TableCell className="text-right">
-                                                {canPay ? (
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handlePay(invoice.id, invoice.amount)}
-                                                        disabled={paying && payingId === invoice.id}
-                                                    >
-                                                        {paying && payingId === invoice.id ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            'Pay Now'
-                                                        )}
-                                                    </Button>
-                                                ) : invoice.paid ? (
-                                                    <span className="text-green-500 text-sm">✓ Paid</span>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-sm">Awaiting payment</span>
-                                                )}
+                                                <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                    {/* Quick Pay Button */}
+                                                    {canPay && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handlePay(invoice.id, invoice.amount)}
+                                                            disabled={paying && payingId === invoice.id}
+                                                            className="bg-green-600 hover:bg-green-700"
+                                                        >
+                                                            {paying && payingId === invoice.id ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                'Pay'
+                                                            )}
+                                                        </Button>
+                                                    )}
+
+                                                    {invoice.paid && (
+                                                        <span className="text-green-500 text-sm flex items-center gap-1">
+                                                            <CheckCircle className="size-3" /> Paid
+                                                        </span>
+                                                    )}
+
+                                                    {!invoice.paid && isCreator && (
+                                                        <span className="text-muted-foreground text-xs">Awaiting</span>
+                                                    )}
+
+                                                    {/* Actions Dropdown */}
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="size-8">
+                                                                <MoreHorizontal className="size-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => setSelectedInvoice(invoice)}>
+                                                                <Eye className="size-4 mr-2" />
+                                                                View Details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => copyShareLink(invoice.id)}>
+                                                                {copiedId === invoice.id.toString() ? (
+                                                                    <>
+                                                                        <Check className="size-4 mr-2 text-green-500" />
+                                                                        Copied!
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Share2 className="size-4 mr-2" />
+                                                                        Share Invoice
+                                                                    </>
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                            {canCancel && (
+                                                                <>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        className="text-red-500 focus:text-red-500"
+                                                                        onClick={() => handleCancel(invoice.id)}
+                                                                        disabled={cancellingId === invoice.id}
+                                                                    >
+                                                                        {cancellingId === invoice.id ? (
+                                                                            <Loader2 className="size-4 mr-2 animate-spin" />
+                                                                        ) : (
+                                                                            <XCircle className="size-4 mr-2" />
+                                                                        )}
+                                                                        Cancel Invoice
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </TableCell>
                                         </motion.tr>
                                     );
@@ -174,6 +305,26 @@ export default function InvoicesPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Invoice Detail Modal */}
+            <InvoiceDetailModal
+                invoice={selectedInvoice}
+                isOpen={!!selectedInvoice}
+                onClose={() => setSelectedInvoice(null)}
+                userAddress={address}
+                onPay={handlePay}
+                onCancel={handleCancel}
+                isPaying={paying && payingId === selectedInvoice?.id}
+                isCancelling={cancellingId === selectedInvoice?.id}
+            />
         </div>
+    );
+}
+
+export default function InvoicesPage() {
+    return (
+        <Suspense fallback={<InvoiceTableSkeleton />}>
+            <InvoicesContent />
+        </Suspense>
     );
 }

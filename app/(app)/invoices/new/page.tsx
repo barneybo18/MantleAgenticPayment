@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { ChevronLeft, Loader2, CheckCircle } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle, User, Wallet, Coins, Calendar, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCreateInvoice } from "@/hooks/useCreateInvoice";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,7 @@ export default function NewInvoicePage() {
     const { isConnected } = useAccount();
     const { createInvoice, isPending, isSuccess, hash, error } = useCreateInvoice();
 
+    const [payeeName, setPayeeName] = useState("");
     const [recipient, setRecipient] = useState("");
     const [amount, setAmount] = useState("");
     const [token, setToken] = useState("0x0000000000000000000000000000000000000000");
@@ -50,9 +51,15 @@ export default function NewInvoicePage() {
             return;
         }
 
+        // Create JSON metadata with name and description
+        const metadata = JSON.stringify({
+            name: payeeName.trim() || null,
+            description: desc.trim() || null,
+        });
+
         const timestamp = Math.floor(new Date(date).getTime() / 1000);
         try {
-            await createInvoice(recipient, amount, token, desc, timestamp);
+            await createInvoice(recipient, amount, token, metadata, timestamp);
         } catch (e) {
             console.error(e);
         }
@@ -109,8 +116,27 @@ export default function NewInvoicePage() {
                     <CardDescription>Create a new on-chain payment request.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    {/* Payee Name */}
                     <div className="space-y-2">
-                        <Label htmlFor="recipient">Recipient Wallet *</Label>
+                        <Label htmlFor="payeeName" className="flex items-center gap-2">
+                            <User className="size-4 text-muted-foreground" />
+                            Payee Name
+                        </Label>
+                        <Input
+                            id="payeeName"
+                            placeholder="John Doe or Company Name"
+                            value={payeeName}
+                            onChange={e => setPayeeName(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Optional - helps identify who needs to pay</p>
+                    </div>
+
+                    {/* Recipient Wallet */}
+                    <div className="space-y-2">
+                        <Label htmlFor="recipient" className="flex items-center gap-2">
+                            <Wallet className="size-4 text-muted-foreground" />
+                            Recipient Wallet *
+                        </Label>
                         <Input
                             id="recipient"
                             placeholder="0x..."

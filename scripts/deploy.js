@@ -25,12 +25,20 @@ async function main() {
 
     await agentPay.waitForDeployment();
 
-    const address = await agentPay.getAddress();
+    // Fetch the transaction receipt to get the block number
+    const txHash = agentPay.deploymentTransaction().hash;
+    const receipt = await hre.ethers.provider.getTransactionReceipt(txHash);
+    const blockNumber = receipt.blockNumber;
+
     console.log("");
-    console.log("✅ AgentPay deployed to:", address);
-    console.log("");
-    console.log("Update your lib/contracts.ts with:");
-    console.log(`export const AGENT_PAY_ADDRESS = "${address}" as const;`);
+    console.log("AgentPay deployed to:", agentPay.target);
+    console.log("Block Number:", blockNumber);
+    console.log("Update lib/contracts.ts with:");
+    console.log(`export const AGENT_PAY_ADDRESS = "${agentPay.target}" as const;`);
+    console.log(`export const AGENT_PAY_DEPLOY_BLOCK = ${blockNumber}n;`);
+
+    const fs = require("fs");
+    fs.writeFileSync("deployed_address.txt", agentPay.target);
 }
 
 main().catch((error) => {

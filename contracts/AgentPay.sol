@@ -36,6 +36,8 @@ contract AgentPay is Ownable, ReentrancyGuard {
         uint256 interval;
         bool isActive;
         string description;
+        uint256 balance; // Native (MNT) balance
+        uint256 tokenBalance; // ERC20 token balance
     }
 
     uint256 public nextInvoiceId;
@@ -56,10 +58,13 @@ contract AgentPay is Ownable, ReentrancyGuard {
 
     event InvoiceCreated(uint256 indexed id, address indexed creator, address indexed recipient, uint256 amount, uint256 dueDate);
     event InvoicePaid(uint256 indexed id, address indexed payer, uint256 amount);
+    event InvoiceCancelled(uint256 indexed id, address indexed creator);
     event AgentConfigured(address indexed user, bool isActive, uint256 limitPerTx);
     event ScheduledPaymentCreated(uint256 indexed id, address indexed from, address indexed to, uint256 amount, uint256 interval);
     event ScheduledPaymentExecuted(uint256 indexed id, address indexed from, address indexed to, uint256 amount);
     event ScheduledPaymentCancelled(uint256 indexed id);
+    event AgentTopUp(uint256 indexed id, uint256 amount, uint256 tokenAmount);
+    event AgentWithdrawn(uint256 indexed id, uint256 amount, uint256 tokenAmount);
 
     constructor() Ownable(msg.sender) {}
 
@@ -115,6 +120,18 @@ contract AgentPay is Ownable, ReentrancyGuard {
         emit InvoicePaid(_id, msg.sender, invoice.amount);
     }
 
+    function cancelInvoice(uint256 _id) external {
+        Invoice storage invoice = invoices[_id];
+        require(invoice.creator == msg.sender, "Not invoice creator");
+        require(!invoice.paid, "Invoice already paid");
+        require(invoice.amount > 0, "Invoice does not exist or already cancelled");
+        
+        // Mark as cancelled by setting amount to 0
+        invoice.amount = 0;
+        
+        emit InvoiceCancelled(_id, msg.sender);
+    }
+
     function getInvoice(uint256 _id) external view returns (Invoice memory) {
         return invoices[_id];
     }
@@ -138,14 +155,14 @@ contract AgentPay is Ownable, ReentrancyGuard {
         uint256 _amount,
         address _token,
         uint256 _interval,
-        string memory _description
+        string memory _description,
+        uint256 _initialTokenDeposit
     ) external payable returns (uint256) {
         require(_to != address(0), "Invalid recipient");
         require(_amount > 0, "Amount must be greater than 0");
         
-        // For native token, require initial deposit
-        if (_token == address(0)) {
-            require(msg.value >= _amount, "Insufficient initial deposit");
+        if (_token != address(0) && _initialTokenDeposit > 0) {
+             IERC20(_token).transferFrom(msg.sender, address(this), _initialTokenDeposit);
         }
 
         uint256 id = nextScheduledPaymentId++;
@@ -158,12 +175,17 @@ contract AgentPay is Ownable, ReentrancyGuard {
             nextExecution: block.timestamp + _interval,
             interval: _interval,
             isActive: true,
-            description: _description
+            description: _description,
+            balance: msg.value,
+            tokenBalance: _initialTokenDeposit
         });
 
         userScheduledPayments[msg.sender].push(id);
         
         emit ScheduledPaymentCreated(id, msg.sender, _to, _amount, _interval);
+        if (msg.value > 0 || _initialTokenDeposit > 0) {
+            emit AgentTopUp(id, msg.value, _initialTokenDeposit);
+        }
         return id;
     }
 
@@ -173,11 +195,14 @@ contract AgentPay is Ownable, ReentrancyGuard {
         require(block.timestamp >= payment.nextExecution, "Not yet due");
         
         if (payment.token == address(0)) {
-            require(address(this).balance >= payment.amount, "Insufficient contract balance");
+            require(payment.balance >= payment.amount, "Insufficient agent balance");
+            payment.balance -= payment.amount;
             (bool sent, ) = payment.to.call{value: payment.amount}("");
             require(sent, "Failed to send");
         } else {
-            IERC20(payment.token).transferFrom(payment.from, payment.to, payment.amount);
+            require(payment.tokenBalance >= payment.amount, "Insufficient token balance");
+            payment.tokenBalance -= payment.amount;
+            IERC20(payment.token).transfer(payment.to, payment.amount);
         }
 
         payment.nextExecution = block.timestamp + payment.interval;
@@ -185,11 +210,58 @@ contract AgentPay is Ownable, ReentrancyGuard {
         emit ScheduledPaymentExecuted(_id, payment.from, payment.to, payment.amount);
     }
 
-    function cancelScheduledPayment(uint256 _id) external {
+    function cancelScheduledPayment(uint256 _id) external nonReentrant {
         ScheduledPayment storage payment = scheduledPayments[_id];
         require(payment.from == msg.sender, "Not owner");
+        require(payment.isActive, "Already cancelled");
+        
         payment.isActive = false;
+        
+        uint256 refundAmount = 0;
+        uint256 refundTokenAmount = 0;
+
+        if (payment.balance > 0) {
+            refundAmount = payment.balance;
+            payment.balance = 0;
+            (bool sent, ) = payment.from.call{value: refundAmount}("");
+            require(sent, "Refund failed");
+        }
+
+        if (payment.token != address(0) && payment.tokenBalance > 0) {
+            refundTokenAmount = payment.tokenBalance;
+            payment.tokenBalance = 0;
+            IERC20(payment.token).transfer(payment.from, refundTokenAmount);
+        }
+        
         emit ScheduledPaymentCancelled(_id);
+        if (refundAmount > 0 || refundTokenAmount > 0) {
+            emit AgentWithdrawn(_id, refundAmount, refundTokenAmount);
+        }
+    }
+
+    event AgentStatusUpdated(uint256 indexed id, bool isActive);
+
+    function topUpAgent(uint256 _id, uint256 _tokenAmount) external payable {
+        ScheduledPayment storage payment = scheduledPayments[_id];
+        require(payment.isActive, "Agent not active"); 
+        
+        if (payment.token != address(0) && _tokenAmount > 0) {
+            IERC20(payment.token).transferFrom(msg.sender, address(this), _tokenAmount);
+            payment.tokenBalance += _tokenAmount;
+        }
+
+        if (msg.value > 0) {
+            payment.balance += msg.value;
+        }
+        
+        emit AgentTopUp(_id, msg.value, _tokenAmount);
+    }
+    
+    function toggleAgentStatus(uint256 _id, bool _isActive) external {
+        ScheduledPayment storage payment = scheduledPayments[_id];
+        require(payment.from == msg.sender, "Not owner");
+        payment.isActive = _isActive;
+        emit AgentStatusUpdated(_id, _isActive);
     }
 
     function getUserScheduledPayments(address _user) external view returns (uint256[] memory) {
