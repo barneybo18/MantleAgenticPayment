@@ -19,6 +19,9 @@ import { defineChain } from 'viem';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, http } from 'wagmi';
 import '@rainbow-me/rainbowkit/styles.css';
+import { WelcomePopup } from './WelcomePopup';
+import { LoadingPopup } from './LoadingPopup';
+import { Suspense } from 'react';
 
 // Define Mantle Sepolia with correct RPC
 const mantleSepolia = defineChain({
@@ -67,6 +70,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>
                 <RainbowKitProvider theme={darkTheme()}>
+                    <WelcomePopup />
+                    <Suspense fallback={null}>
+                        <LoadingPopup />
+                    </Suspense>
                     {children}
                 </RainbowKitProvider>
             </QueryClientProvider>
