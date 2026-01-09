@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -15,29 +14,28 @@ import { Sparkles, Zap, Shield, ArrowRight } from "lucide-react";
 
 export function WelcomePopup() {
     const [isOpen, setIsOpen] = useState(false);
-    const { isConnected } = useAccount();
-    const wasConnected = useRef(false);
 
     useEffect(() => {
-        // Show popup when wallet connects (transitions from disconnected to connected)
-        if (isConnected && !wasConnected.current) {
+        // Check if user has seen the welcome popup
+        const hasSeenWelcome = localStorage.getItem('agentpay_welcome_seen');
+        if (!hasSeenWelcome) {
             setIsOpen(true);
         }
-        wasConnected.current = isConnected;
-    }, [isConnected]);
+    }, []);
 
     const handleClose = () => {
         setIsOpen(false);
+        localStorage.setItem('agentpay_welcome_seen', 'true');
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader className="text-center sm:text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-lg shadow-primary/30">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/70 shadow-lg shadow-primary/30">
                         <span className="text-2xl font-bold text-primary-foreground">AP</span>
                     </div>
-                    <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-muted-foreground">
+                    <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-foreground to-muted-foreground">
                         Welcome to AgentPay! 🎉
                     </DialogTitle>
                     <DialogDescription className="text-base pt-2">
