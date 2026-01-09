@@ -247,8 +247,20 @@ function InvoicesContent() {
                                                         </span>
                                                     )}
 
-                                                    {!invoice.paid && isCreator && (
-                                                        <span className="text-muted-foreground text-xs">Awaiting</span>
+                                                    {/* Quick Cancel Button for creators */}
+                                                    {canCancel && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            onClick={() => handleCancel(invoice.id)}
+                                                            disabled={cancelling && cancellingId === invoice.id}
+                                                        >
+                                                            {cancelling && cancellingId === invoice.id ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                'Cancel'
+                                                            )}
+                                                        </Button>
                                                     )}
 
                                                     {/* Actions Dropdown */}

@@ -11,10 +11,12 @@
 - **🧾 Decentralized Invoicing**: Create, track, and pay on-chain invoices with full transparency.
 - **🤖 Autonomous Agents**: Configure "agents" to handle recurring payments (payroll, subscriptions) automatically.
 - **💰 Funded Agents**: Agents hold funds directly (MNT or ERC20 tokens) for trustless execution.
-- **⚡ Multi-Token Support**: Native **$MNT**, **USDT**, **USDC**, **mETH**, **WETH**, and more.
-- **📊 Real-time Dashboard**: Track your spending, income, and active agents in one beautiful interface.
+- **⚡ Multi-Token Support**: Native **$MNT**, **USDT**, **USDC**, **mETH**, **cmETH**, **WETH** - network-aware token selection.
+- **📊 Interactive Dashboard**: Click stat cards to drill down into payments received, pending invoices, and wallet details.
 - **🔄 Pause/Resume**: Full control over your agents with one-click pause and resume.
-- **🕸️ Network Aware**: Automatically detects Mainnet/Testnet and uses the correct contract.
+- **🕸️ Network Aware**: Automatically detects Mainnet/Testnet and uses the correct contract + tokens.
+- **📱 Fully Responsive**: Mobile-first design that works beautifully on all screen sizes.
+- **🔔 Transaction Feedback**: Real-time toast notifications and transaction modals with Mantlescan links.
 
 ## 🛠️ Tech Stack
 

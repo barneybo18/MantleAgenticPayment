@@ -23,6 +23,7 @@ import { useChainId } from "wagmi"; // Added useChainId
 import { useTokenApproval } from "@/hooks/useTokenApproval"; // Added useTokenApproval
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getExplorerUrl } from "@/lib/mantle";
 
 // Helper to format duration
 const formatDuration = (seconds: number) => {
@@ -294,7 +295,7 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
                                                 <div className="text-right">
                                                     <p className="font-bold">-{formatUnits(item.amount, decimals)} {symbol}</p>
                                                     <a
-                                                        href={`https://sepolia.mantlescan.xyz/tx/${item.transactionHash}`}
+                                                        href={getExplorerUrl(chainId, item.transactionHash)}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="text-xs text-primary hover:underline font-mono"
@@ -362,7 +363,7 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
                                     <div className="text-right">
                                         <p className="font-bold">-{formatUnits(item.amount, decimals)} {symbol}</p>
                                         <a
-                                            href={`https://sepolia.mantlescan.xyz/tx/${item.transactionHash}`}
+                                            href={getExplorerUrl(chainId, item.transactionHash)}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="text-xs text-primary hover:underline font-mono"

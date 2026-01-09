@@ -2,6 +2,9 @@ import { usePublicClient, useChainId } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from '@/lib/contracts';
 
+// Max block range for Mantle RPC (limit is 10,000, use 9,000 for safety)
+const MAX_BLOCK_RANGE = 9000n;
+
 export interface ExecutionEvent {
     transactionHash: string;
     blockNumber: bigint;
@@ -27,22 +30,41 @@ export function useAgentHistory(agentId: bigint | undefined) {
         const fetchLogs = async () => {
             setIsLoading(true);
             try {
-                const logs = await publicClient.getContractEvents({
-                    address: config.address,
-                    abi: AGENT_PAY_ABI,
-                    eventName: 'ScheduledPaymentExecuted',
-                    args: { id: agentId },
-                    fromBlock: config.deployBlock
-                });
+                const currentBlock = await publicClient.getBlockNumber();
+                const allLogs: any[] = [];
+
+                // Fetch logs in chunks to avoid RPC block range limit
+                let fromBlock = config.deployBlock;
+                while (fromBlock <= currentBlock) {
+                    const toBlock = fromBlock + MAX_BLOCK_RANGE > currentBlock
+                        ? currentBlock
+                        : fromBlock + MAX_BLOCK_RANGE;
+
+                    try {
+                        const logs = await publicClient.getContractEvents({
+                            address: config.address,
+                            abi: AGENT_PAY_ABI,
+                            eventName: 'ScheduledPaymentExecuted',
+                            args: { id: agentId },
+                            fromBlock,
+                            toBlock
+                        });
+                        allLogs.push(...logs);
+                    } catch (chunkError) {
+                        console.warn(`Failed to fetch logs for blocks ${fromBlock}-${toBlock}:`, chunkError);
+                    }
+
+                    fromBlock = toBlock + 1n;
+                }
 
                 // Fetch timestamps
                 // Optimization: Deduplicate block numbers to reduce requests
-                const uniqueBlockNumbers = Array.from(new Set(logs.map(l => l.blockNumber)));
+                const uniqueBlockNumbers = Array.from(new Set(allLogs.map(l => l.blockNumber)));
                 const blockPromises = uniqueBlockNumbers.map(bn => publicClient.getBlock({ blockNumber: bn }));
                 const blocks = await Promise.all(blockPromises);
                 const blockMap = new Map(blocks.map(b => [b.number, b.timestamp]));
 
-                const historyItems = logs.map((log) => ({
+                const historyItems = allLogs.map((log) => ({
                     transactionHash: log.transactionHash,
                     blockNumber: log.blockNumber,
                     amount: log.args.amount as bigint,
@@ -62,7 +84,8 @@ export function useAgentHistory(agentId: bigint | undefined) {
         };
 
         fetchLogs();
-    }, [agentId, publicClient]);
+    }, [agentId, publicClient, chainId]);
 
     return { history, isLoading };
 }
+

@@ -1,22 +1,48 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, FileText, Bot, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { DollarSign, FileText, Bot, ArrowUpRight, ArrowDownLeft, Copy, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useInvoices } from "@/hooks/useInvoices";
-import { useAccount } from "wagmi";
+import { useAgents } from "@/hooks/useAgents";
+import { useAccount, useChainId } from "wagmi";
 import { formatEther } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { StatCardsGridSkeleton } from "@/components/StatCardSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { StatDetailSheet } from "@/components/StatDetailSheet";
+import { InvoiceDetailModal } from "@/components/InvoiceDetailModal";
+import { Invoice } from "@/lib/contracts";
+import { getExplorerUrl, getExplorerAddressUrl } from "@/lib/mantle";
+import { usePayInvoice } from "@/hooks/usePayInvoice";
+import { useCancelInvoice } from "@/hooks/useCancelInvoice";
 
 export default function DashboardPage() {
     const { isConnected, address } = useAccount();
-    const { balanceFormatted, totalReceivedFormatted, invoiceCount, scheduledCount, isLoading: statsLoading } = useUserStats();
-    const { invoices, isLoading: invoicesLoading } = useInvoices();
+    const chainId = useChainId();
+    const { balanceFormatted, totalReceivedFormatted, invoiceCount, isLoading: statsLoading } = useUserStats();
+    const { invoices, isLoading: invoicesLoading, refetch } = useInvoices();
+    const { agents, isLoading: agentsLoading } = useAgents();
+    const { payInvoice, isPending: paying } = usePayInvoice();
+    const { cancelInvoice, isPending: cancelling } = useCancelInvoice();
+
+    // Sheet visibility state
+    const [receivedSheetOpen, setReceivedSheetOpen] = useState(false);
+    const [pendingSheetOpen, setPendingSheetOpen] = useState(false);
+    const [walletSheetOpen, setWalletSheetOpen] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+    const [copiedAddress, setCopiedAddress] = useState(false);
+    const [payingId, setPayingId] = useState<bigint | null>(null);
+    const [cancellingId, setCancellingId] = useState<bigint | null>(null);
+
+    // Calculate visible agent count using same logic as agents page
+    // Filter out cancelled/deleted agents (isActive=false AND no balance)
+    const isCancelled = (a: typeof agents[0]) => !a.isActive && a.balance === 0n && a.tokenBalance === 0n;
+    const visibleAgentCount = agents.filter(a => !isCancelled(a)).length;
 
     // Get recent invoices (last 5)
     const recentInvoices = invoices
@@ -26,6 +52,48 @@ export default function DashboardPage() {
     // Get pending (unpaid) invoices
     const pendingInvoices = invoices.filter(inv => !inv.paid);
     const pendingTotal = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0n);
+
+    // Get paid invoices where user is recipient (received payments)
+    const receivedPaidInvoices = invoices.filter(
+        inv => inv.paid && inv.recipient.toLowerCase() === address?.toLowerCase()
+    );
+
+    const handlePay = async (invoiceId: bigint, amount: bigint) => {
+        setPayingId(invoiceId);
+        try {
+            await payInvoice(invoiceId, amount);
+            setTimeout(() => {
+                refetch();
+                setPayingId(null);
+                setSelectedInvoice(null);
+            }, 2000);
+        } catch (e) {
+            setPayingId(null);
+        }
+    };
+
+    const handleCancel = async (invoiceId: bigint) => {
+        setCancellingId(invoiceId);
+        try {
+            await cancelInvoice(invoiceId);
+            setTimeout(() => {
+                refetch();
+                setCancellingId(null);
+                setSelectedInvoice(null);
+            }, 2000);
+        } catch (e) {
+            setCancellingId(null);
+        }
+    };
+
+    const copyAddress = () => {
+        if (address) {
+            navigator.clipboard.writeText(address);
+            setCopiedAddress(true);
+            setTimeout(() => setCopiedAddress(false), 2000);
+        }
+    };
+
 
     if (!isConnected) {
         return (
@@ -39,14 +107,14 @@ export default function DashboardPage() {
         );
     }
 
-    const isLoading = statsLoading || invoicesLoading;
+    const isLoading = statsLoading || invoicesLoading || agentsLoading;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
                 <div className="flex items-center gap-2">
-                    <Button asChild>
+                    <Button asChild size="sm" className="sm:size-default">
                         <Link href="/invoices/new">Create Invoice</Link>
                     </Button>
                 </div>
@@ -71,7 +139,11 @@ export default function DashboardPage() {
                         transition={{ duration: 0.3 }}
                         className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
                     >
-                        <Card className="relative overflow-hidden">
+                        {/* Total Received - Clickable */}
+                        <Card
+                            className="relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
+                            onClick={() => setReceivedSheetOpen(true)}
+                        >
                             <div className="absolute inset-0 bg-linear-to-br from-green-500/5 to-transparent" />
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total Received</CardTitle>
@@ -79,11 +151,15 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{totalReceivedFormatted}</div>
-                                <p className="text-xs text-muted-foreground">From all paid invoices</p>
+                                <p className="text-xs text-muted-foreground">Click to view details →</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="relative overflow-hidden">
+                        {/* Pending Invoices - Clickable */}
+                        <Card
+                            className="relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
+                            onClick={() => setPendingSheetOpen(true)}
+                        >
                             <div className="absolute inset-0 bg-linear-to-br from-yellow-500/5 to-transparent" />
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
@@ -97,19 +173,26 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="relative overflow-hidden">
-                            <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 to-transparent" />
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Scheduled Agents</CardTitle>
-                                <Bot className="h-4 w-4 text-purple-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{scheduledCount}</div>
-                                <p className="text-xs text-muted-foreground">Active automations</p>
-                            </CardContent>
-                        </Card>
+                        {/* Scheduled Agents - Link to agents page */}
+                        <Link href="/agents">
+                            <Card className="relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all h-full">
+                                <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 to-transparent" />
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Scheduled Agents</CardTitle>
+                                    <Bot className="h-4 w-4 text-purple-500" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">{visibleAgentCount}</div>
+                                    <p className="text-xs text-muted-foreground">Click to manage →</p>
+                                </CardContent>
+                            </Card>
+                        </Link>
 
-                        <Card className="relative overflow-hidden">
+                        {/* Wallet Balance - Clickable */}
+                        <Card
+                            className="relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
+                            onClick={() => setWalletSheetOpen(true)}
+                        >
                             <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 to-transparent" />
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
@@ -124,8 +207,8 @@ export default function DashboardPage() {
                 )}
             </AnimatePresence>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+                <Card className="lg:col-span-4">
                     <CardHeader>
                         <CardTitle>Recent Invoices</CardTitle>
                         <CardDescription>
@@ -184,7 +267,8 @@ export default function DashboardPage() {
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.1 }}
-                                            className="flex items-center justify-between border-b last:border-0 pb-2 last:pb-0"
+                                            className="flex items-center justify-between border-b last:border-0 pb-2 last:pb-0 cursor-pointer hover:bg-muted/50 rounded-md p-2 -mx-2 transition-colors"
+                                            onClick={() => setSelectedInvoice(invoice)}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className={`size-9 rounded-full flex items-center justify-center ${invoice.creator.toLowerCase() === address?.toLowerCase()
@@ -223,7 +307,7 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="col-span-3">
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Quick Actions</CardTitle>
                         <CardDescription>
@@ -249,6 +333,145 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Total Received Sheet */}
+            <StatDetailSheet
+                isOpen={receivedSheetOpen}
+                onClose={() => setReceivedSheetOpen(false)}
+                title="Payments Received"
+                description={`${receivedPaidInvoices.length} paid invoices • ${totalReceivedFormatted}`}
+            >
+                {receivedPaidInvoices.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No payments received yet</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {receivedPaidInvoices.map((invoice) => (
+                            <div
+                                key={invoice.id.toString()}
+                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                                onClick={() => {
+                                    setReceivedSheetOpen(false);
+                                    setSelectedInvoice(invoice);
+                                }}
+                            >
+                                <div className="space-y-1">
+                                    <p className="font-medium text-sm">
+                                        From {invoice.creator.slice(0, 6)}...{invoice.creator.slice(-4)}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {new Date(Number(invoice.createdAt) * 1000).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold text-green-500">+{formatEther(invoice.amount)} MNT</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </StatDetailSheet>
+
+            {/* Pending Invoices Sheet */}
+            <StatDetailSheet
+                isOpen={pendingSheetOpen}
+                onClose={() => setPendingSheetOpen(false)}
+                title="Pending Invoices"
+                description={`${pendingInvoices.length} awaiting payment • ~${formatEther(pendingTotal)} MNT`}
+            >
+                {pendingInvoices.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No pending invoices</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {pendingInvoices.map((invoice) => {
+                            const isCreator = invoice.creator.toLowerCase() === address?.toLowerCase();
+                            return (
+                                <div
+                                    key={invoice.id.toString()}
+                                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                                    onClick={() => {
+                                        setPendingSheetOpen(false);
+                                        setSelectedInvoice(invoice);
+                                    }}
+                                >
+                                    <div className="space-y-1">
+                                        <p className="font-medium text-sm">
+                                            {isCreator ? 'Sent to' : 'From'} {isCreator
+                                                ? `${invoice.recipient.slice(0, 6)}...${invoice.recipient.slice(-4)}`
+                                                : `${invoice.creator.slice(0, 6)}...${invoice.creator.slice(-4)}`
+                                            }
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Due: {new Date(Number(invoice.dueDate) * 1000).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold">{formatEther(invoice.amount)} MNT</p>
+                                        <p className="text-xs text-yellow-500">Pending</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </StatDetailSheet>
+
+            {/* Wallet Balance Sheet */}
+            <StatDetailSheet
+                isOpen={walletSheetOpen}
+                onClose={() => setWalletSheetOpen(false)}
+                title="Wallet Details"
+                description={balanceFormatted}
+            >
+                <div className="space-y-4">
+                    <div className="p-4 border rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">Your Address</p>
+                        <div className="flex items-center gap-2">
+                            <p className="font-mono text-sm truncate flex-1">{address}</p>
+                            <Button variant="ghost" size="icon" onClick={copyAddress}>
+                                {copiedAddress ? (
+                                    <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                    <Copy className="h-4 w-4" />
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-2">Balance</p>
+                        <p className="text-3xl font-bold">{balanceFormatted}</p>
+                    </div>
+
+                    <Button asChild className="w-full" variant="outline">
+                        <a
+                            href={getExplorerAddressUrl(chainId, address || '')}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View on Mantlescan
+                        </a>
+                    </Button>
+                </div>
+            </StatDetailSheet>
+
+            {/* Invoice Detail Modal */}
+            <InvoiceDetailModal
+                invoice={selectedInvoice}
+                isOpen={!!selectedInvoice}
+                onClose={() => setSelectedInvoice(null)}
+                userAddress={address}
+                onPay={handlePay}
+                onCancel={handleCancel}
+                isPaying={paying && payingId === selectedInvoice?.id}
+                isCancelling={cancellingId === selectedInvoice?.id}
+            />
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -16,11 +16,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { SUPPORTED_TOKENS, NATIVE_TOKEN, CONTRACT_CONFIG } from "@/lib/contracts";
 import { useChainId } from "wagmi";
 import { useTokenApproval } from "@/hooks/useTokenApproval";
+import { TransactionModal, TransactionState } from "@/components/TransactionModal";
+import { toast } from "sonner";
 
 export default function NewAgentPage() {
     const router = useRouter();
     const chainId = useChainId();
-    const { createAgent, isPending, isSuccess } = useCreateAgent();
+    const { createAgent, isPending, isSuccess, hash, error } = useCreateAgent();
 
     const availableTokens = SUPPORTED_TOKENS.filter(t => t.chainId === 0 || t.chainId === chainId);
 
@@ -31,6 +33,10 @@ export default function NewAgentPage() {
     const [interval, setInterval] = useState("604800"); // 1 week
     const [description, setDescription] = useState("");
     const [initialDeposit, setInitialDeposit] = useState("");
+
+    // Transaction state tracking
+    const [txState, setTxState] = useState<TransactionState>('idle');
+    const [txError, setTxError] = useState<string | undefined>();
 
     const selectedToken = SUPPORTED_TOKENS.find(t => t.address === token) || { symbol: "Custom", decimals: 18 };
     const isNative = token === NATIVE_TOKEN;
@@ -49,8 +55,34 @@ export default function NewAgentPage() {
     const depositAmountBigInt = initialDeposit ? parseUnits(initialDeposit, selectedToken.decimals) : 0n;
     const needsApproval = !isNative && depositAmountBigInt > 0n && allowance < depositAmountBigInt;
 
+    // Watch for transaction state changes
+    useEffect(() => {
+        if (isPending && txState === 'confirming') {
+            setTxState('pending');
+        }
+        if (isSuccess && hash) {
+            setTxState('success');
+            toast.success("Agent created successfully!", {
+                description: "Your payment agent is now active."
+            });
+        }
+    }, [isPending, isSuccess, hash, txState]);
+
+    useEffect(() => {
+        if (error) {
+            setTxState('error');
+            setTxError(error.message || "Transaction failed");
+            toast.error("Failed to create agent", {
+                description: error.message?.slice(0, 100)
+            });
+        }
+    }, [error]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setTxState('confirming');
+        setTxError(undefined);
+
         try {
             await createAgent(
                 recipient,
@@ -61,17 +93,25 @@ export default function NewAgentPage() {
                 isNative ? parseUnits(initialDeposit, 18) : 0n, // MNT Deposit (value)
                 isNative ? 0n : depositAmountBigInt // Token Deposit
             );
-            setTimeout(() => router.push("/agents"), 2000);
-        } catch (error) {
-            console.error("Failed to create agent:", error);
+        } catch (err: any) {
+            setTxState('error');
+            setTxError(err.message || "Transaction failed");
         }
+    };
+
+    const handleCancel = () => {
+        setTxState('idle');
+        setTxError(undefined);
     };
 
     const handleApprove = async () => {
         if (depositAmountBigInt > 0n) {
+            toast.info("Approving token...", { description: "Please confirm in your wallet" });
             await approveToken(depositAmountBigInt);
+            toast.success("Token approved!");
         }
     };
+
 
     return (
         <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -280,6 +320,21 @@ export default function NewAgentPage() {
                     </CardFooter>
                 </Card>
             </form>
+
+            {/* Transaction Status Modal */}
+            <TransactionModal
+                isOpen={txState !== 'idle'}
+                onClose={handleCancel}
+                onCancel={handleCancel}
+                state={txState}
+                title="Creating Agent"
+                description={`Deploying your ${description || 'payment agent'} on Mantle...`}
+                txHash={hash}
+                error={txError}
+                successMessage="Your agent has been deployed and is ready to execute payments!"
+                onSuccessAction={() => router.push("/agents")}
+                successActionLabel="View Agents"
+            />
         </div>
     );
 }

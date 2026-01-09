@@ -32,6 +32,18 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface AgentCardProps {
     agent: ScheduledPayment;
@@ -101,13 +113,14 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     };
 
     const handleDelete = async () => {
-        if (confirm("Are you sure? This will delete the agent and refund all remaining funds to your wallet.")) {
-            try {
-                await deleteAgent(agent.id);
-                setTimeout(onUpdate, 2000);
-            } catch (e) {
-                console.error(e);
-            }
+        try {
+            toast.info("Deleting agent...", { description: "Please confirm in your wallet" });
+            await deleteAgent(agent.id);
+            toast.success("Agent deleted!", { description: "Funds have been refunded to your wallet." });
+            setTimeout(onUpdate, 2000);
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to delete agent");
         }
     };
 
@@ -265,14 +278,31 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                     </DialogContent>
                 </Dialog>
 
-                <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={handleDelete}
-                    disabled={isDeletePending}
-                >
-                    {isDeletePending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            disabled={isDeletePending}
+                        >
+                            {isDeletePending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Agent?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the agent and refund all remaining funds ({formatUnits(displayBalance, decimals)} {symbol}) to your wallet.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete & Refund
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardFooter>
         </Card>
     );

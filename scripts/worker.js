@@ -37,16 +37,26 @@ async function main() {
             const count = await agentPay.nextScheduledPaymentId();
             const now = Math.floor(Date.now() / 1000);
 
-            console.log(`\nChecking ${count} agents at ${new Date().toLocaleTimeString()}...`);
+            let activeCount = 0;
+            let processedCount = 0;
 
             for (let i = 0; i < count; i++) {
                 try {
                     const agent = await agentPay.getScheduledPayment(i);
 
+                    const isNative = agent.token === NATIVE_TOKEN;
+                    const balance = isNative ? agent.balance : agent.tokenBalance;
+
+                    // Skip cancelled/deleted agents (isActive=false AND no balance)
+                    const isCancelled = !agent.isActive && agent.balance === 0n && agent.tokenBalance === 0n;
+                    if (isCancelled) {
+                        continue; // Skip this agent entirely
+                    }
+
+                    activeCount++;
+
                     if (agent.isActive) {
                         const due = Number(agent.nextExecution);
-                        const isNative = agent.token === NATIVE_TOKEN;
-                        const balance = isNative ? agent.balance : agent.tokenBalance;
                         const balanceLabel = isNative ? "MNT" : "Tokens";
 
                         if (now >= due) {
@@ -58,8 +68,13 @@ async function main() {
                             if (balance >= agent.amount) {
                                 console.log(`   Balance OK (${hre.ethers.formatEther(balance)} ${balanceLabel}). Executing...`);
                                 try {
-                                    // Use higher gas limit for Mantle networks
-                                    const tx = await agentPay.executeScheduledPayment(i, { gasLimit: 5000000 });
+                                    // Estimate gas first to ensure transaction will succeed
+                                    const estimatedGas = await agentPay.executeScheduledPayment.estimateGas(i);
+                                    console.log(`   Estimated gas: ${estimatedGas.toString()}`);
+
+                                    // Execute with 20% buffer on estimated gas
+                                    const gasLimit = (estimatedGas * 120n) / 100n;
+                                    const tx = await agentPay.executeScheduledPayment(i, { gasLimit });
                                     console.log(`   ⏳ Transaction sent: ${tx.hash}`);
                                     await tx.wait();
                                     console.log(`   ✅ Execution Confirmed!`);
@@ -75,10 +90,13 @@ async function main() {
                             }
                         }
                     }
+                    processedCount++;
                 } catch (err) {
                     console.error(`Error checking agent #${i}:`, err.message);
                 }
             }
+
+            console.log(`\n📊 Checked at ${new Date().toLocaleTimeString()}: ${activeCount} visible agents (${count} total IDs)`);
         } catch (error) {
             console.error("Loop error:", error.message);
         }

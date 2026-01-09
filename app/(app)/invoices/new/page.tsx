@@ -5,25 +5,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { ChevronLeft, Loader2, CheckCircle, User, Wallet, Coins, Calendar, FileText } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCreateInvoice } from "@/hooks/useCreateInvoice";
 import { useRouter } from "next/navigation";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { SUPPORTED_TOKENS, NATIVE_TOKEN } from "@/lib/contracts";
+import { parseUnits } from "viem";
 
 export default function NewInvoicePage() {
     const router = useRouter();
     const { isConnected } = useAccount();
+    const chainId = useChainId();
     const { createInvoice, isPending, isSuccess, hash, error } = useCreateInvoice();
 
     const [payeeName, setPayeeName] = useState("");
     const [recipient, setRecipient] = useState("");
     const [amount, setAmount] = useState("");
-    const [token, setToken] = useState("0x0000000000000000000000000000000000000000");
+    const [token, setToken] = useState(NATIVE_TOKEN);
     const [date, setDate] = useState("");
     const [desc, setDesc] = useState("");
+
+    // Filter tokens based on current chain
+    const availableTokens = useMemo(() => {
+        return SUPPORTED_TOKENS.filter(t =>
+            t.chainId === 0 || t.chainId === chainId
+        );
+    }, [chainId]);
+
+    // Get selected token details
+    const selectedToken = useMemo(() => {
+        return availableTokens.find(t => t.address === token) || availableTokens[0];
+    }, [token, availableTokens]);
 
     // Set default due date to 7 days from now
     useEffect(() => {
@@ -58,8 +74,10 @@ export default function NewInvoicePage() {
         });
 
         const timestamp = Math.floor(new Date(date).getTime() / 1000);
+        const amountInUnits = parseUnits(amount, selectedToken.decimals).toString();
+
         try {
-            await createInvoice(recipient, amount, token, metadata, timestamp);
+            await createInvoice(recipient, amountInUnits, token, metadata, timestamp);
         } catch (e) {
             console.error(e);
         }
@@ -149,27 +167,53 @@ export default function NewInvoicePage() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="amount">Amount (MNT) *</Label>
+                            <Label htmlFor="amount">Amount ({selectedToken.symbol}) *</Label>
                             <Input
                                 id="amount"
                                 type="number"
-                                step="0.001"
+                                step={selectedToken.decimals === 6 ? "0.000001" : "0.001"}
                                 placeholder="0.00"
                                 value={amount}
                                 onChange={e => setAmount(e.target.value)}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="token">Token</Label>
-                            <select
-                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                                value={token}
-                                onChange={e => setToken(e.target.value)}
-                            >
-                                <option value="0x0000000000000000000000000000000000000000">MNT (Native)</option>
-                            </select>
+                            <Label>Token</Label>
+                            <Select value={token} onValueChange={setToken}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue>
+                                        <div className="flex items-center gap-2">
+                                            {selectedToken.logo && (
+                                                <img
+                                                    src={selectedToken.logo}
+                                                    alt={selectedToken.symbol}
+                                                    className="h-4 w-4 rounded-full"
+                                                />
+                                            )}
+                                            <span>{selectedToken.symbol}</span>
+                                        </div>
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableTokens.map((t) => (
+                                        <SelectItem key={t.address} value={t.address}>
+                                            <div className="flex items-center gap-2">
+                                                {t.logo && (
+                                                    <img
+                                                        src={t.logo}
+                                                        alt={t.symbol}
+                                                        className="h-4 w-4 rounded-full"
+                                                    />
+                                                )}
+                                                <span>{t.symbol}</span>
+                                                <span className="text-muted-foreground text-xs">({t.name})</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

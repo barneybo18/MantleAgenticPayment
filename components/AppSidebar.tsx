@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, Bot, Wallet } from "lucide-react";
+import { LayoutDashboard, FileText, Bot, Menu, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet";
 
 const items = [
     {
@@ -23,11 +32,60 @@ const items = [
     },
 ];
 
+// Mobile menu trigger button
+export function MobileMenuTrigger() {
+    const pathname = usePathname();
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle menu</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle className="flex items-center gap-2">
+                        <div className="size-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                            AP
+                        </div>
+                        <span>AgentPay</span>
+                    </SheetTitle>
+                </SheetHeader>
+                <nav className="grid gap-1 p-4">
+                    {items.map((item) => (
+                        <Link
+                            key={item.title}
+                            href={item.url}
+                            onClick={() => setOpen(false)}
+                            className={cn(
+                                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                                pathname === item.url ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                            )}
+                        >
+                            <item.icon className="size-4" />
+                            {item.title}
+                        </Link>
+                    ))}
+                </nav>
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+                    <div className="text-xs text-muted-foreground">
+                        Mantle Agentic Hackathon
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}
+
+// Desktop sidebar (hidden on mobile)
 export function AppSidebar() {
     const pathname = usePathname();
 
     return (
-        <div className="flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
+        <div className="hidden md:flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
             <div className="p-4 border-b flex items-center gap-2">
                 <div className="size-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold">
                     AP
@@ -41,7 +99,7 @@ export function AppSidebar() {
                             key={item.title}
                             href={item.url}
                             className={cn(
-                                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
                                 pathname === item.url ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                             )}
                         >
@@ -52,7 +110,6 @@ export function AppSidebar() {
                 </nav>
             </div>
             <div className="p-4 border-t">
-                {/* Footer info or user profile could go here */}
                 <div className="text-xs text-muted-foreground">
                     Mantle Agentic Hackathon
                 </div>

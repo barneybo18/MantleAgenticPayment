@@ -11,7 +11,7 @@ export function useCreateInvoice() {
 
     const createInvoice = async (
         recipient: string,
-        amount: string,
+        amount: string, // Amount already in smallest units (wei/satoshi)
         token: string,
         metadataHash: string,
         dueDate: number
@@ -29,7 +29,7 @@ export function useCreateInvoice() {
             functionName: "createInvoice",
             args: [
                 recipient as `0x${string}`,
-                parseEther(amount),
+                BigInt(amount), // Amount already parsed with correct decimals
                 tokenAddr as `0x${string}`,
                 metadataHash,
                 BigInt(dueDate)
