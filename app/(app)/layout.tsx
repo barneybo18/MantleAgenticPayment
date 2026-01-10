@@ -3,6 +3,7 @@
 import { AppSidebar, MobileMenuTrigger } from "@/components/AppSidebar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { NetworkBadge } from "@/components/NetworkBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toaster } from "sonner";
 
 export default function DashboardLayout({
@@ -17,9 +18,10 @@ export default function DashboardLayout({
                 <header className="h-14 border-b px-4 md:px-6 flex items-center justify-between bg-card gap-2">
                     <div className="flex items-center gap-2">
                         <MobileMenuTrigger />
-                        <h1 className="font-semibold text-lg">AgentPay</h1>
+                        <h1 className="font-semibold text-lg">Bogent</h1>
                     </div>
                     <div className="flex items-center gap-2 md:gap-4">
+                        <ThemeToggle />
                         <NetworkBadge />
                         <ConnectButton showBalance={false} />
                     </div>

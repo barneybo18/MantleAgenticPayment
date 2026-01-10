@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { useRef, useCallback } from "react";
 import { ParticleNetwork, ParticleNetworkRef } from "@/components/ParticleNetwork";
@@ -38,12 +39,16 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10 text-center space-y-6 max-w-2xl px-6">
         <div className="flex items-center justify-center">
-          <div className="size-16 rounded-xl bg-primary flex items-center justify-center text-primary-foreground text-3xl font-bold shadow-lg shadow-primary/20">
-            AP
-          </div>
+          <Image
+            src="/bogent-logo.png"
+            alt="Bogent"
+            width={80}
+            height={80}
+            className="rounded-xl shadow-lg shadow-primary/20"
+          />
         </div>
         <h1 className="text-5xl font-extrabold tracking-tight lg:text-6xl bg-clip-text text-transparent bg-linear-to-tr from-foreground to-muted-foreground">
-          AgentPay
+          Bogent
         </h1>
         <p className="text-xl text-muted-foreground">
           Autonomous agents for your decentralized payments. Schedule, automate, and relax on Mantle Network.

@@ -90,7 +90,7 @@ function InvoicesContent() {
 
         const details = [
             `═══════════════════════════════`,
-            `       AGENTPAY INVOICE        `,
+            `        BOGENT INVOICE         `,
             `═══════════════════════════════`,
             ``,
             `Invoice ID: #${invoice.id.toString().padStart(4, '0')}`,

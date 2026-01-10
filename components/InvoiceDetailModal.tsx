@@ -128,7 +128,7 @@ export function InvoiceDetailModal({
     const getShareMessage = () => {
         const amount = formatEther(invoice.amount);
         const lines = [
-            `💰 Invoice Request on AgentPay`,
+            `💰 Invoice Request on Bogent`,
             ``,
             `📋 Invoice ID: ${formatId(invoice.id)}`,
             `💵 Amount: ${amount} MNT`,
@@ -145,7 +145,7 @@ export function InvoiceDetailModal({
         const amount = formatEther(invoice.amount);
         const lines = [
             `═══════════════════════════════`,
-            `       AGENTPAY INVOICE        `,
+            `        BOGENT INVOICE         `,
             `═══════════════════════════════`,
             ``,
             `Invoice ID: ${formatId(invoice.id)}`,
@@ -247,7 +247,7 @@ export function InvoiceDetailModal({
 
     const shareToTwitter = () => {
         const amount = formatEther(invoice.amount);
-        const text = `💰 Invoice for ${amount} MNT | ID: ${formatId(invoice.id)}${metadata.description ? ` | ${metadata.description}` : ''} | Pay via @AgentPayOnMantle`;
+        const text = `💰 Invoice for ${amount} MNT | ID: ${formatId(invoice.id)}${metadata.description ? ` | ${metadata.description}` : ''} | Pay via @BogentHQ`;
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getShareUrl())}`;
         window.open(url, '_blank');
     };
@@ -593,9 +593,9 @@ export function InvoiceDetailModal({
                                             borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             fontWeight: 'bold', fontSize: '20px'
                                         }}>
-                                            AP
+                                            B
                                         </div>
-                                        <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>AgentPay</h1>
+                                        <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>Bogent</h1>
                                     </div>
                                     <p style={{ color: '#94a3b8', margin: 0 }}>Autonomous Payments on Mantle</p>
                                 </div>
@@ -667,7 +667,7 @@ export function InvoiceDetailModal({
                             }}>
                                 <div>
                                     <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>Pay this invoice at</p>
-                                    <p style={{ color: '#22d3ee', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>agentpay.vercel.app</p>
+                                    <p style={{ color: '#22d3ee', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>bogent.app</p>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Powered by Mantle Network</p>
