@@ -127,23 +127,66 @@ export function InvoiceDetailModal({
 
     const getShareMessage = () => {
         const amount = formatEther(invoice.amount);
-        return `💰 Invoice Request on AgentPay\n\nAmount: ${amount} MNT\n${metadata.name ? `From: ${metadata.name}\n` : ''}${metadata.description ? `Memo: ${metadata.description}\n` : ''}Due: ${formatDate(invoice.dueDate)}\n\nPay now:`;
+        const lines = [
+            `💰 Invoice Request on AgentPay`,
+            ``,
+            `📋 Invoice ID: ${formatId(invoice.id)}`,
+            `💵 Amount: ${amount} MNT`,
+        ];
+        if (metadata.name) lines.push(`👤 From: ${metadata.name}`);
+        if (metadata.description) lines.push(`📝 Memo: ${metadata.description}`);
+        lines.push(`📅 Due: ${formatDate(invoice.dueDate)}`);
+        lines.push(``);
+        lines.push(`🔗 Pay now: ${getShareUrl()}`);
+        return lines.join('\n');
+    };
+
+    const getFullInvoiceDetails = () => {
+        const amount = formatEther(invoice.amount);
+        const lines = [
+            `═══════════════════════════════`,
+            `       AGENTPAY INVOICE        `,
+            `═══════════════════════════════`,
+            ``,
+            `Invoice ID: ${formatId(invoice.id)}`,
+            `Amount: ${amount} MNT`,
+            ``,
+            `From: ${metadata.name || 'Unknown'}`,
+            `Creator Address: ${invoice.creator}`,
+            ``,
+            `To: ${invoice.recipient}`,
+            ``,
+        ];
+        if (metadata.description) {
+            lines.push(`Memo: ${metadata.description}`);
+            lines.push(``);
+        }
+        lines.push(`Created: ${formatDate(invoice.createdAt)} at ${formatTime(invoice.createdAt)}`);
+        lines.push(`Due Date: ${formatDate(invoice.dueDate)} at ${formatTime(invoice.dueDate)}`);
+        lines.push(`Status: ${status.label}`);
+        lines.push(``);
+        lines.push(`═══════════════════════════════`);
+        lines.push(`Pay at: ${getShareUrl()}`);
+        lines.push(`═══════════════════════════════`);
+        return lines.join('\n');
+    };
+
+    const copyInvoiceDetails = () => {
+        copyToClipboard(getFullInvoiceDetails(), 'details');
+    };
+
+    const copyShareLink = () => {
+        copyToClipboard(getShareUrl(), 'share');
     };
 
     const generatePosterBlob = async () => {
         if (!posterRef.current) return null;
 
         try {
-            // Wait a bit for fonts/styles to settle
             await new Promise(resolve => setTimeout(resolve, 100));
-
-            // html-to-image configuration for maximum stability:
-            // 1. skipFonts: true -> Prevents fetching/parsing global CSS which might contain 'oklch'/'lab' colors that cause crashes.
-            // 2. filter: Exclude link tags to avoid external resource issues.
-            // 3. width/height: Explicitly set to matching dimensions.
             const blob = await toBlob(posterRef.current, {
                 cacheBust: true,
-                skipFonts: true, // we use Arial, no need to embed complex fonts
+                skipFonts: true,
                 backgroundColor: '#0f172a',
                 width: 600,
                 height: 800,
@@ -152,7 +195,6 @@ export function InvoiceDetailModal({
                     return node.tagName !== 'LINK' && node.tagName !== 'STYLE';
                 }
             });
-
             return blob;
         } catch (err) {
             console.error("Poster generation failed", err);
@@ -164,7 +206,6 @@ export function InvoiceDetailModal({
     const downloadAsImage = async () => {
         const blob = await generatePosterBlob();
         if (!blob) return;
-
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `Invoice-${formatId(invoice.id)}.png`;
@@ -176,44 +217,39 @@ export function InvoiceDetailModal({
     const shareWithImage = async () => {
         const blob = await generatePosterBlob();
         if (!blob) return;
-
         const file = new File([blob], `invoice-${formatId(invoice.id)}.png`, { type: 'image/png' });
-
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
                     files: [file],
                     title: `Invoice ${formatId(invoice.id)}`,
-                    // Append URL to text because some platforms ignore 'url' when 'files' are present
-                    text: `${getShareMessage()} ${getShareUrl()}`,
+                    text: getShareMessage(),
                 });
             } catch (e) {
                 console.log('Share cancelled');
             }
         } else {
-            // Fallback for desktop or unsupported browsers
             downloadAsImage();
         }
     };
 
     const shareToWhatsApp = () => {
-        const url = `https://wa.me/?text=${encodeURIComponent(`${getShareMessage()} ${getShareUrl()}`)}`;
+        const message = getShareMessage();
+        const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
     };
 
     const shareToTelegram = () => {
-        const url = `https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(getShareMessage())}`;
+        const message = getShareMessage();
+        const url = `https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
     };
 
     const shareToTwitter = () => {
-        const text = `💰 Requesting ${formatEther(invoice.amount)} MNT on @AgentPayOnMantle`;
+        const amount = formatEther(invoice.amount);
+        const text = `💰 Invoice for ${amount} MNT | ID: ${formatId(invoice.id)}${metadata.description ? ` | ${metadata.description}` : ''} | Pay via @AgentPayOnMantle`;
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getShareUrl())}`;
         window.open(url, '_blank');
-    };
-
-    const copyShareLink = () => {
-        copyToClipboard(getShareUrl(), 'share');
     };
 
     const nativeShare = async () => {
@@ -435,6 +471,19 @@ export function InvoiceDetailModal({
                                         <>
                                             <Link2 className="size-4 mr-2" />
                                             Copy Link
+                                        </>
+                                    )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={copyInvoiceDetails}>
+                                    {copied === 'details' ? (
+                                        <>
+                                            <Check className="size-4 mr-2 text-green-500" />
+                                            Details Copied!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FileText className="size-4 mr-2" />
+                                            Copy Invoice Details
                                         </>
                                     )}
                                 </DropdownMenuItem>

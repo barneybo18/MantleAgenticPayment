@@ -13,7 +13,7 @@ module.exports = {
             url: "https://rpc.sepolia.mantle.xyz",
             chainId: 5003,
             accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-            gasPrice: 1000000000, // 1 gwei - Mantle testnet minimum
+            gasPrice: 50000000, // 0.05 gwei - same as mainnet
         },
         mantle: {
             url: "https://rpc.mantle.xyz",

@@ -78,10 +78,43 @@ function InvoicesContent() {
         }
     };
 
-    const copyShareLink = (invoiceId: bigint) => {
-        const shareUrl = `${window.location.origin}/invoices/${invoiceId.toString()}`;
-        navigator.clipboard.writeText(shareUrl);
-        setCopiedId(invoiceId.toString());
+    const formatDate = (timestamp: bigint) => {
+        const date = new Date(Number(timestamp) * 1000);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const copyInvoiceDetails = (invoice: Invoice) => {
+        const metadata = parseMetadata(invoice.metadataHash);
+        const amount = formatEther(invoice.amount);
+        const shareUrl = `${window.location.origin}/invoices/${invoice.id.toString()}`;
+
+        const details = [
+            `═══════════════════════════════`,
+            `       AGENTPAY INVOICE        `,
+            `═══════════════════════════════`,
+            ``,
+            `Invoice ID: #${invoice.id.toString().padStart(4, '0')}`,
+            `Amount: ${amount} MNT`,
+            ``,
+            `From: ${metadata.name || 'Unknown'}`,
+            `Address: ${invoice.creator}`,
+            ``,
+            `To: ${invoice.recipient}`,
+            ``,
+        ];
+        if (metadata.description) {
+            details.push(`Memo: ${metadata.description}`);
+            details.push(``);
+        }
+        details.push(`Due Date: ${formatDate(invoice.dueDate)}`);
+        details.push(`Status: ${invoice.paid ? 'Paid' : 'Pending'}`);
+        details.push(``);
+        details.push(`═══════════════════════════════`);
+        details.push(`Pay at: ${shareUrl}`);
+        details.push(`═══════════════════════════════`);
+
+        navigator.clipboard.writeText(details.join('\n'));
+        setCopiedId(invoice.id.toString());
         setTimeout(() => setCopiedId(null), 2000);
     };
 
@@ -111,11 +144,6 @@ function InvoicesContent() {
             </div>
         );
     }
-
-    const formatDate = (timestamp: bigint) => {
-        const date = new Date(Number(timestamp) * 1000);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
 
     const getStatus = (invoice: { paid: boolean; dueDate: bigint }) => {
         if (invoice.paid) return { label: 'Paid', variant: 'default' as const };
@@ -275,7 +303,7 @@ function InvoicesContent() {
                                                                 <Eye className="size-4 mr-2" />
                                                                 View Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => copyShareLink(invoice.id)}>
+                                                            <DropdownMenuItem onClick={() => copyInvoiceDetails(invoice)}>
                                                                 {copiedId === invoice.id.toString() ? (
                                                                     <>
                                                                         <Check className="size-4 mr-2 text-green-500" />
@@ -329,6 +357,24 @@ function InvoicesContent() {
                 isPaying={paying && payingId === selectedInvoice?.id}
                 isCancelling={cancellingId === selectedInvoice?.id}
             />
+
+            {/* Copy Success Toast */}
+            <AnimatePresence>
+                {copiedId && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+                    >
+                        <div className="flex items-center gap-3 bg-green-600 text-white px-5 py-3 rounded-full shadow-lg shadow-green-600/30">
+                            <Check className="size-5" />
+                            <span className="font-medium">Invoice details copied to clipboard!</span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
