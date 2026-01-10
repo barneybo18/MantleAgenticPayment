@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useAccount } from "wagmi";
 import {
     Dialog,
     DialogContent,
@@ -14,18 +16,25 @@ import { Sparkles, Zap, Shield, ArrowRight } from "lucide-react";
 
 export function WelcomePopup() {
     const [isOpen, setIsOpen] = useState(false);
+    const [hasShown, setHasShown] = useState(false);
+    const pathname = usePathname();
+    const { isConnected } = useAccount();
 
     useEffect(() => {
-        // Check if user has seen the welcome popup
-        const hasSeenWelcome = localStorage.getItem('agentpay_welcome_seen');
-        if (!hasSeenWelcome) {
-            setIsOpen(true);
+        // Only show on dashboard routes (not landing page)
+        if (pathname === "/" || pathname === "") {
+            return;
         }
-    }, []);
+
+        // Show popup if wallet is not connected and we haven't shown it yet this session
+        if (!isConnected && !hasShown) {
+            setIsOpen(true);
+            setHasShown(true);
+        }
+    }, [pathname, isConnected, hasShown]);
 
     const handleClose = () => {
         setIsOpen(false);
-        localStorage.setItem('agentpay_welcome_seen', 'true');
     };
 
     return (

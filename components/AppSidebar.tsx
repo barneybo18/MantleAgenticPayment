@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, Bot, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileText, Bot, Menu } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
     Sheet,
     SheetContent,
@@ -70,10 +71,11 @@ export function MobileMenuTrigger() {
                         </Link>
                     ))}
                 </nav>
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
                         Mantle Agentic Hackathon
                     </div>
+                    <ThemeToggle />
                 </div>
             </SheetContent>
         </Sheet>
@@ -109,10 +111,11 @@ export function AppSidebar() {
                     ))}
                 </nav>
             </div>
-            <div className="p-4 border-t">
+            <div className="p-4 border-t flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
                     Mantle Agentic Hackathon
                 </div>
+                <ThemeToggle />
             </div>
         </div>
     );
