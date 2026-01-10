@@ -25,10 +25,22 @@ async function main() {
 
     await agentPay.waitForDeployment();
 
-    // Fetch the transaction receipt to get the block number
+    // Fetch the transaction receipt to get the block number (with retries)
     const txHash = agentPay.deploymentTransaction().hash;
-    const receipt = await hre.ethers.provider.getTransactionReceipt(txHash);
-    const blockNumber = receipt.blockNumber;
+    console.log("Transaction hash:", txHash);
+    console.log("Waiting for confirmation...");
+
+    let receipt = null;
+    let retries = 10;
+    while (!receipt && retries > 0) {
+        receipt = await hre.ethers.provider.getTransactionReceipt(txHash);
+        if (!receipt) {
+            await new Promise(r => setTimeout(r, 3000)); // Wait 3 seconds
+            retries--;
+        }
+    }
+
+    const blockNumber = receipt ? receipt.blockNumber : "unknown";
 
     console.log("");
     console.log("AgentPay deployed to:", agentPay.target);
