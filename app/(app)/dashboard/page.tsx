@@ -99,7 +99,7 @@ export default function DashboardPage() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
                 <div className="text-center space-y-2">
-                    <h2 className="text-3xl font-bold tracking-tight">Welcome to AgentPay</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">Welcome to Bogent</h2>
                     <p className="text-muted-foreground">Connect your wallet to get started</p>
                 </div>
                 <ConnectButton />

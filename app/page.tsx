@@ -4,77 +4,83 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { useRef, useCallback } from "react";
-import { ParticleNetwork, ParticleNetworkRef } from "@/components/ParticleNetwork";
+import { VantaBackground } from "@/components/VantaBackground";
+import { motion } from "framer-motion";
 
 export default function Home() {
-  const particleRef = useRef<ParticleNetworkRef>(null);
-  const buttonRef = useRef<HTMLAnchorElement>(null);
-
-  const handleMouseEnter = useCallback(() => {
-    if (buttonRef.current && particleRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      // Ring radius = button width + some padding
-      const radius = Math.max(rect.width, rect.height) / 2 + 60;
-      particleRef.current.setRingTarget(centerX, centerY, radius);
-    }
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    if (particleRef.current) {
-      particleRef.current.clearRingTarget();
-    }
-  }, []);
-
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Particle Network Background */}
-      <ParticleNetwork ref={particleRef} />
+    /* Force dark mode for the entire landing page */
+    <div className="dark relative min-h-screen bg-[#0a0a0a] text-foreground overflow-hidden font-sans">
 
-      {/* Subtle radial gradient overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
-
-      {/* Content */}
-      <div className="relative z-10 text-center space-y-6 max-w-2xl px-6">
-        <div className="flex items-center justify-center">
-          <Image
-            src="/bogent-logo.png"
-            alt="Bogent"
-            width={80}
-            height={80}
-            className="rounded-xl shadow-lg shadow-primary/20"
-          />
-        </div>
-        <h1 className="text-5xl font-extrabold tracking-tight lg:text-6xl bg-clip-text text-transparent bg-linear-to-tr from-foreground to-muted-foreground">
-          Bogent
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          Autonomous agents for your decentralized payments. Schedule, automate, and relax on Mantle Network.
-        </p>
-        <div className="flex gap-4 justify-center pt-4">
-          <Button
-            size="lg"
-            className="rounded-full shadow-xl shadow-primary/20 relative z-20"
-            asChild
-          >
-            <Link
-              ref={buttonRef}
-              href="/dashboard"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              Launch App <ArrowRight className="ml-2 size-4" />
-            </Link>
-          </Button>
-          <Button size="lg" variant="outline" className="rounded-full relative z-20" asChild>
-            <a href="https://docs.mantle.xyz" target="_blank" rel="noopener noreferrer">
-              Learn about Mantle
-            </a>
-          </Button>
-        </div>
+      {/* Full-Page Vanta Background with gradient mask - covers entire viewport for mouse tracking */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          // Fade from transparent (left) to visible (right) - lines stay on right side
+          maskImage: "linear-gradient(to right, transparent 0%, transparent 30%, rgba(0,0,0,0.3) 50%, black 70%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, transparent 30%, rgba(0,0,0,0.3) 50%, black 70%)"
+        }}
+      >
+        <VantaBackground className="w-full h-full" />
       </div>
+
+      {/* Top Left Logo */}
+      <div className="absolute top-6 left-6 z-50">
+        <Image
+          src="/bogent-logo.png"
+          alt="Bogent"
+          width={60}
+          height={60}
+          className="rounded-xl shadow-lg shadow-black/20"
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center lg:justify-start px-8 sm:px-12 lg:px-24 py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="space-y-10 max-w-2xl text-center lg:text-left"
+        >
+          <div className="space-y-6">
+            <h1 className="text-6xl sm:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white">
+              <span className="bg-clip-text text-transparent bg-linear-to-b from-white to-white/50">
+                Bogent
+              </span>
+            </h1>
+
+            <p className="text-lg sm:text-xl lg:text-2xl font-light text-slate-300 leading-relaxed max-w-lg mx-auto lg:mx-0">
+              <span className="text-primary font-medium">Autonomous finance</span> on Mantle.
+              Secure, trustless agents designed for your automated future.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <Button
+              size="lg"
+              className="h-14 px-10 rounded-full text-lg font-bold bg-white text-black hover:bg-white/90 shadow-xl shadow-white/10 transition-all duration-300"
+              asChild
+            >
+              <Link href="/dashboard">
+                Launch App
+                <ArrowRight className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-14 px-10 rounded-full text-lg font-medium border-white/10 text-white hover:bg-white/5 transition-all duration-300"
+              asChild
+            >
+              <a href="https://docs.mantle.xyz" target="_blank" rel="noopener noreferrer">
+                About Mantle
+              </a>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+
     </div>
   );
 }
