@@ -1,8 +1,8 @@
 import { Address } from 'viem';
 
 // Deployed on Mantle Sepolia testnet
-export const AGENT_PAY_ADDRESS_SEPOLIA = "0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8" as const;
-export const AGENT_PAY_DEPLOY_BLOCK_SEPOLIA = 33177000n; // Approx updated block
+export const AGENT_PAY_ADDRESS_SEPOLIA = "0xA1c85b0176F5500Ce050D843e9D3B4B057519B33" as const;
+export const AGENT_PAY_DEPLOY_BLOCK_SEPOLIA = 33310039n; // Approx updated block
 
 // Mainnet Deployment
 export const AGENT_PAY_ADDRESS_MAINNET = "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3" as const;
@@ -296,12 +296,32 @@ export const AGENT_PAY_ABI = [
             { internalType: "address", name: "_token", type: "address" },
             { internalType: "uint256", name: "_interval", type: "uint256" },
             { internalType: "string", name: "_description", type: "string" },
-            { internalType: "uint256", name: "_initialTokenDeposit", type: "uint256" }
+            { internalType: "uint256", name: "_initialTokenDeposit", type: "uint256" },
+            { internalType: "uint256", name: "_endDate", type: "uint256" }
         ],
         name: "createScheduledPayment",
         outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
         stateMutability: "payable",
         type: "function"
+    },
+    {
+        inputs: [
+            { internalType: "uint256", name: "_id", type: "uint256" },
+            { internalType: "uint256", name: "_endDate", type: "uint256" }
+        ],
+        name: "updateScheduledPayment",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function"
+    },
+    {
+        anonymous: false,
+        inputs: [
+            { indexed: true, internalType: "uint256", name: "id", type: "uint256" },
+            { indexed: false, internalType: "uint256", name: "endDate", type: "uint256" }
+        ],
+        name: "ScheduledPaymentUpdated",
+        type: "event"
     },
     {
         inputs: [{ internalType: "uint256", name: "_id", type: "uint256" }],
@@ -377,7 +397,8 @@ export const AGENT_PAY_ABI = [
                     { internalType: "bool", name: "isActive", type: "bool" },
                     { internalType: "string", name: "description", type: "string" },
                     { internalType: "uint256", name: "balance", type: "uint256" },
-                    { internalType: "uint256", name: "tokenBalance", type: "uint256" }
+                    { internalType: "uint256", name: "tokenBalance", type: "uint256" },
+                    { internalType: "uint256", name: "endDate", type: "uint256" }
                 ],
                 internalType: "struct AgentPay.ScheduledPayment",
                 name: "",
@@ -514,7 +535,8 @@ export interface ScheduledPayment {
     isActive: boolean;
     description: string;
     balance: bigint;
-    tokenBalance: bigint; // Added
+    tokenBalance: bigint;
+    endDate: bigint;
 }
 
 export interface UserStats {

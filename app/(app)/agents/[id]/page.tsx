@@ -13,10 +13,11 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowLeft, Wallet, Clock, Activity, History, Trash2, Bot, Plus, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { RefreshCw } from "lucide-react";
 import { formatEther, formatUnits, parseUnits } from "viem";
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SUPPORTED_TOKENS, NATIVE_TOKEN, CONTRACT_CONFIG } from "@/lib/contracts"; // Added imports
 import { useChainId } from "wagmi"; // Added useChainId
@@ -24,6 +25,7 @@ import { useTokenApproval } from "@/hooks/useTokenApproval"; // Added useTokenAp
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getExplorerUrl } from "@/lib/mantle";
+import { toast } from "sonner";
 
 // Helper to format duration
 const formatDuration = (seconds: number) => {
@@ -39,12 +41,33 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
     const { agent, isLoading: agentLoading } = useAgent(id);
     const { history, isLoading: historyLoading } = useAgentHistory(id);
     const { topUpAgent, isPending: isTopUpPending } = useTopUpAgent();
-    const { deleteAgent, isPending: isDeletePending } = useDeleteAgent();
+    const { deleteAgent, isPending: isDeletePending, isSuccess: isDeleteSuccess, error: deleteError, resetState: resetDeleteState } = useDeleteAgent();
     const { toggleAgentStatus, isPending: isTogglePending } = useToggleAgentStatus();
+    const router = useRouter();
 
     const [topUpAmount, setTopUpAmount] = useState("");
     const [topUpOpen, setTopUpOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const chainId = useChainId();
+
+    // Handle successful deletion - redirect to agents page
+    useEffect(() => {
+        if (isDeleteSuccess && isDeleting) {
+            toast.success("Agent deleted!", { description: "Funds have been refunded to your wallet." });
+            setIsDeleting(false);
+            resetDeleteState();
+            router.push("/agents");
+        }
+    }, [isDeleteSuccess, isDeleting, router, resetDeleteState]);
+
+    // Handle delete error
+    useEffect(() => {
+        if (deleteError && isDeleting) {
+            toast.error("Failed to delete agent", { description: deleteError.message || "Transaction failed" });
+            setIsDeleting(false);
+            resetDeleteState();
+        }
+    }, [deleteError, isDeleting, resetDeleteState]);
 
     // Token & Chain Info
     const tokenInfo = agent ? SUPPORTED_TOKENS.find(t => t.address === agent.token) : undefined;
@@ -156,8 +179,21 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
                         {agent.isActive ? "Pause Agent" : "Resume Agent"}
                     </Button>
 
-                    <Button variant="destructive" size="sm" onClick={() => deleteAgent(id)} disabled={isDeletePending}>
-                        {isDeletePending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4 mr-2" />}
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={async () => {
+                            toast.info("Deleting agent...", { description: "Please confirm in your wallet" });
+                            setIsDeleting(true);
+                            const success = await deleteAgent(id);
+                            if (!success) {
+                                setIsDeleting(false);
+                                toast.error("Failed to delete agent", { description: "Transaction was rejected" });
+                            }
+                        }}
+                        disabled={isDeletePending || isDeleting}
+                    >
+                        {(isDeletePending || isDeleting) ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4 mr-2" />}
                         Delete & Withdraw
                     </Button>
                 </div>

@@ -33,20 +33,28 @@ function InvoicesContent() {
     const { cancelInvoice, isPending: cancelling } = useCancelInvoice();
     const [payingId, setPayingId] = useState<bigint | null>(null);
     const [cancellingId, setCancellingId] = useState<bigint | null>(null);
-    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+    // Use ID for selection to ensure data stays fresh on refetch
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<bigint | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const searchParams = useSearchParams();
+
+    // Derived selected invoice from fresh data
+    const selectedInvoice = selectedInvoiceId !== null
+        ? invoices.find(inv => inv.id === selectedInvoiceId) || null
+        : null;
 
     // Handle invoice ID from URL query params (for shared invoices)
     useEffect(() => {
         const invoiceIdParam = searchParams.get('id');
-        if (invoiceIdParam && invoices.length > 0) {
-            const invoice = invoices.find(inv => inv.id.toString() === invoiceIdParam);
-            if (invoice) {
-                setSelectedInvoice(invoice);
-            }
+        if (invoiceIdParam) {
+            // valid ID?
+            const id = BigInt(invoiceIdParam);
+            // Only set if we haven't set it yet or it's different (and exists in list check is optional but good UX)
+            // But we might load list later.
+            setSelectedInvoiceId(id);
         }
-    }, [searchParams, invoices]);
+    }, [searchParams]);
 
     const handlePay = async (invoiceId: bigint, amount: bigint) => {
         setPayingId(invoiceId);
@@ -56,7 +64,8 @@ function InvoicesContent() {
             setTimeout(() => {
                 refetch();
                 setPayingId(null);
-                setSelectedInvoice(null);
+                // We do NOT close the modal, so user sees "Paid" status update!
+                // setSelectedInvoiceId(null); 
             }, 2000);
         } catch (e) {
             setPayingId(null);
@@ -71,7 +80,7 @@ function InvoicesContent() {
             setTimeout(() => {
                 refetch();
                 setCancellingId(null);
-                setSelectedInvoice(null);
+                // setSelectedInvoiceId(null);
             }, 2000);
         } catch (e) {
             setCancellingId(null);
@@ -223,7 +232,7 @@ function InvoicesContent() {
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.05 }}
                                             className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
-                                            onClick={() => setSelectedInvoice(invoice)}
+                                            onClick={() => setSelectedInvoiceId(invoice.id)}
                                         >
                                             <TableCell className="font-mono text-xs">{formatId(invoice.id)}</TableCell>
                                             <TableCell>
@@ -299,7 +308,7 @@ function InvoicesContent() {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => setSelectedInvoice(invoice)}>
+                                                            <DropdownMenuItem onClick={() => setSelectedInvoiceId(invoice.id)}>
                                                                 <Eye className="size-4 mr-2" />
                                                                 View Details
                                                             </DropdownMenuItem>
@@ -350,7 +359,7 @@ function InvoicesContent() {
             <InvoiceDetailModal
                 invoice={selectedInvoice}
                 isOpen={!!selectedInvoice}
-                onClose={() => setSelectedInvoice(null)}
+                onClose={() => setSelectedInvoiceId(null)}
                 userAddress={address}
                 onPay={handlePay}
                 onCancel={handleCancel}

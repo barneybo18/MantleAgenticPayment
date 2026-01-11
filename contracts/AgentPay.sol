@@ -38,6 +38,7 @@ contract AgentPay is Ownable, ReentrancyGuard {
         string description;
         uint256 balance; // Native (MNT) balance
         uint256 tokenBalance; // ERC20 token balance
+        uint256 endDate; // 0 = no end date, otherwise timestamp when agent terminates
     }
 
     uint256 public nextInvoiceId;
@@ -63,6 +64,7 @@ contract AgentPay is Ownable, ReentrancyGuard {
     event ScheduledPaymentCreated(uint256 indexed id, address indexed from, address indexed to, uint256 amount, uint256 interval);
     event ScheduledPaymentExecuted(uint256 indexed id, address indexed from, address indexed to, uint256 amount);
     event ScheduledPaymentCancelled(uint256 indexed id);
+    event ScheduledPaymentUpdated(uint256 indexed id, uint256 endDate);
     event AgentTopUp(uint256 indexed id, uint256 amount, uint256 tokenAmount);
     event AgentWithdrawn(uint256 indexed id, uint256 amount, uint256 tokenAmount);
 
@@ -150,16 +152,41 @@ contract AgentPay is Ownable, ReentrancyGuard {
 
     // ============ Scheduled Payment Functions ============
 
+    // Helper to calculate minimum end date based on interval
+    function _getMinEndDate(uint256 _interval) internal view returns (uint256) {
+        // Minute interval (60s) - can terminate after 2 minutes
+        if (_interval <= 60) {
+            return block.timestamp + 2 minutes;
+        }
+        // Daily interval (86400s) - can terminate after 1 day
+        if (_interval <= 1 days) {
+            return block.timestamp + 1 days;
+        }
+        // Weekly interval (604800s) - can terminate after 8 days
+        if (_interval <= 7 days) {
+            return block.timestamp + 8 days;
+        }
+        // Monthly interval (~30 days) - can terminate after 31 days
+        return block.timestamp + 31 days;
+    }
+
     function createScheduledPayment(
         address _to,
         uint256 _amount,
         address _token,
         uint256 _interval,
         string memory _description,
-        uint256 _initialTokenDeposit
+        uint256 _initialTokenDeposit,
+        uint256 _endDate
     ) external payable returns (uint256) {
         require(_to != address(0), "Invalid recipient");
         require(_amount > 0, "Amount must be greater than 0");
+        
+        // Validate end date if provided
+        if (_endDate != 0) {
+            uint256 minEndDate = _getMinEndDate(_interval);
+            require(_endDate >= minEndDate, "End date too soon for interval");
+        }
         
         if (_token != address(0) && _initialTokenDeposit > 0) {
              IERC20(_token).transferFrom(msg.sender, address(this), _initialTokenDeposit);
@@ -177,7 +204,8 @@ contract AgentPay is Ownable, ReentrancyGuard {
             isActive: true,
             description: _description,
             balance: msg.value,
-            tokenBalance: _initialTokenDeposit
+            tokenBalance: _initialTokenDeposit,
+            endDate: _endDate
         });
 
         userScheduledPayments[msg.sender].push(id);
@@ -189,10 +217,35 @@ contract AgentPay is Ownable, ReentrancyGuard {
         return id;
     }
 
+    function updateScheduledPayment(
+        uint256 _id,
+        uint256 _endDate
+    ) external {
+        ScheduledPayment storage payment = scheduledPayments[_id];
+        require(payment.from == msg.sender, "Not owner");
+        require(payment.isActive, "Agent not active");
+        
+        // Validate end date if provided
+        if (_endDate != 0) {
+            uint256 minEndDate = _getMinEndDate(payment.interval);
+            require(_endDate >= minEndDate, "End date too soon for interval");
+        }
+        
+        payment.endDate = _endDate;
+        emit ScheduledPaymentUpdated(_id, _endDate);
+    }
+
     function executeScheduledPayment(uint256 _id) external nonReentrant {
         ScheduledPayment storage payment = scheduledPayments[_id];
         require(payment.isActive, "Payment not active");
         require(block.timestamp >= payment.nextExecution, "Not yet due");
+        
+        // Check if agent has reached end date
+        if (payment.endDate != 0 && block.timestamp >= payment.endDate) {
+            payment.isActive = false;
+            emit ScheduledPaymentCancelled(_id);
+            return; // Don't execute, agent has terminated
+        }
         
         if (payment.token == address(0)) {
             require(payment.balance >= payment.amount, "Insufficient agent balance");

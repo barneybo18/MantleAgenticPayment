@@ -4,13 +4,13 @@ import { useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagm
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from "@/lib/contracts";
 import { useState, useEffect, useCallback } from "react";
 
-export function useDeleteAgent() {
+export function useUpdateAgent() {
     const { writeContractAsync, data: hash, isPending: isWritePending, error: writeError, reset } = useWriteContract();
     const { isLoading: isConfirming, isSuccess, error: receiptError } = useWaitForTransactionReceipt({ hash });
     const chainId = useChainId();
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    const deleteAgent = useCallback(async (id: bigint): Promise<boolean> => {
+    const updateAgent = useCallback(async (id: bigint, endDate: bigint): Promise<boolean> => {
         const config = CONTRACT_CONFIG[chainId];
         const address = config?.address;
 
@@ -19,38 +19,38 @@ export function useDeleteAgent() {
             return false;
         }
 
-        setIsDeleting(true);
+        setIsUpdating(true);
         try {
             await writeContractAsync({
                 address: address,
                 abi: AGENT_PAY_ABI,
-                functionName: "cancelScheduledPayment",
-                args: [id]
+                functionName: "updateScheduledPayment",
+                args: [id, endDate]
             });
             return true;
         } catch (e) {
-            console.error("Delete agent error:", e);
-            setIsDeleting(false);
+            console.error("Update agent error:", e);
+            setIsUpdating(false);
             return false;
         }
     }, [chainId, writeContractAsync]);
 
-    // Reset deleting state when transaction completes (success or error)
+    // Reset updating state when transaction completes (success or error)
     useEffect(() => {
         if (isSuccess || receiptError) {
-            setIsDeleting(false);
+            setIsUpdating(false);
         }
     }, [isSuccess, receiptError]);
 
     const resetState = useCallback(() => {
         reset();
-        setIsDeleting(false);
+        setIsUpdating(false);
     }, [reset]);
 
     return {
-        deleteAgent,
+        updateAgent,
         hash,
-        isPending: isWritePending || isConfirming || isDeleting,
+        isPending: isWritePending || isConfirming || isUpdating,
         isSuccess,
         error: writeError || receiptError,
         resetState

@@ -70,7 +70,8 @@ export function useCreateScheduledPayment() {
         amount: string,
         token: string,
         intervalSeconds: number,
-        description: string
+        description: string,
+        endDate: bigint = 0n
     ) => {
         const config = CONTRACT_CONFIG[chainId];
         if (!config?.address) throw new Error("Contract not deployed on this chain");
@@ -90,7 +91,8 @@ export function useCreateScheduledPayment() {
                 tokenAddr as `0x${string}`,
                 BigInt(intervalSeconds),
                 description,
-                0n // initialTokenDeposit
+                0n, // initialTokenDeposit
+                endDate
             ],
             value: tokenAddr === "0x0000000000000000000000000000000000000000" ? amountWei : 0n
         });

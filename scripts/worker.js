@@ -4,7 +4,7 @@ const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
 
 // Network-specific contract addresses
 const CONTRACT_CONFIG = {
-    5003: "0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8", // Mantle Sepolia
+    5003: "0xA1c85b0176F5500Ce050D843e9D3B4B057519B33", // Mantle Sepolia - Updated
     5000: "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3", // Mantle Mainnet
 };
 
@@ -99,10 +99,17 @@ async function main() {
             console.log(`\n📊 Checked at ${new Date().toLocaleTimeString()}: ${activeCount} visible agents (${count} total IDs)`);
         } catch (error) {
             console.error("Loop error:", error.message);
+
+            // If rate limited (429), wait longer
+            if (error.message.includes("429") || error.message.includes("Too Many Requests")) {
+                console.log("⚠️ Rate limited. Waiting 60 seconds...");
+                await new Promise(resolve => setTimeout(resolve, 60000));
+                continue;
+            }
         }
 
-        // Wait 10 seconds
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        // Wait 30 seconds (increased to avoid rate limits)
+        await new Promise(resolve => setTimeout(resolve, 30000));
     }
 }
 

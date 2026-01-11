@@ -33,6 +33,8 @@ export default function NewAgentPage() {
     const [interval, setInterval] = useState("604800"); // 1 week
     const [description, setDescription] = useState("");
     const [initialDeposit, setInitialDeposit] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [endTime, setEndTime] = useState("");
 
     // Transaction state tracking
     const [txState, setTxState] = useState<TransactionState>('idle');
@@ -91,7 +93,8 @@ export default function NewAgentPage() {
                 BigInt(interval),
                 description,
                 isNative ? parseUnits(initialDeposit, 18) : 0n, // MNT Deposit (value)
-                isNative ? 0n : depositAmountBigInt // Token Deposit
+                isNative ? 0n : depositAmountBigInt, // Token Deposit
+                (endDate && endTime) ? BigInt(Math.floor(new Date(`${endDate}T${endTime}`).getTime() / 1000)) : 0n
             );
         } catch (err: any) {
             setTxState('error');
@@ -237,6 +240,36 @@ export default function NewAgentPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+
+                        {/* Termination Settings */}
+                        <div className="space-y-4 pt-4 border-t">
+                            <Label className="text-base font-semibold">Termination (Optional)</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="endDate" className="text-sm font-normal">End Date</Label>
+                                    <Input
+                                        id="endDate"
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="endTime" className="text-sm font-normal">End Time</Label>
+                                    <Input
+                                        id="endTime"
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                        disabled={!endDate}
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                If set, the agent will automatically stop payments after this date.
+                            </p>
                         </div>
 
                         <div className="pt-4 border-t">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useReadContract, useReadContracts, useChainId } from "wagmi";
+import { useReadContract, useReadContracts, useChainId, useWatchContractEvent } from "wagmi";
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, Invoice, NATIVE_TOKEN } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 
@@ -70,6 +70,31 @@ export function useInvoices() {
             refetchInvoices();
         }
     };
+
+    // Real-time event listeners
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'InvoiceCreated',
+        onLogs: () => { console.log('Invoice created'); refetch(); },
+        enabled: isContractAvailable
+    });
+
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'InvoicePaid',
+        onLogs: () => { console.log('Invoice paid'); refetch(); },
+        enabled: isContractAvailable
+    });
+
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'InvoiceCancelled',
+        onLogs: () => { console.log('Invoice cancelled'); refetch(); },
+        enabled: isContractAvailable
+    });
 
     return {
         invoices,

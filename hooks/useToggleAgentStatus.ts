@@ -13,8 +13,7 @@ export function useToggleAgentStatus() {
             address: config.address,
             abi: AGENT_PAY_ABI,
             functionName: "toggleAgentStatus",
-            args: [id, isActive],
-            gas: 200000n, // Manual gas override for Mainnet compatibility
+            args: [id, isActive]
         });
     };
 

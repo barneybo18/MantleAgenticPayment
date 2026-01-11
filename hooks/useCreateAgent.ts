@@ -15,7 +15,8 @@ export function useCreateAgent() {
         interval: bigint,
         description: string,
         initialDeposit: bigint,
-        initialTokenDeposit: bigint = 0n
+        initialTokenDeposit: bigint = 0n,
+        endDate: bigint = 0n
     ) => {
         const config = CONTRACT_CONFIG[chainId];
         const address = config?.address;
@@ -29,7 +30,7 @@ export function useCreateAgent() {
             address: address,
             abi: AGENT_PAY_ABI,
             functionName: "createScheduledPayment",
-            args: [to as `0x${string}`, amount, token as `0x${string}`, interval, description, initialTokenDeposit],
+            args: [to as `0x${string}`, amount, token as `0x${string}`, interval, description, initialTokenDeposit, endDate],
             value: initialDeposit
         });
     };

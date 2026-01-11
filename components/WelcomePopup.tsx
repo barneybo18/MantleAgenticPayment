@@ -15,27 +15,41 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sparkles, Zap, Shield, ArrowRight } from "lucide-react";
 
+const STORAGE_KEY = "bogent_welcome_shown";
+
 export function WelcomePopup() {
     const [isOpen, setIsOpen] = useState(false);
-    const [hasShown, setHasShown] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const pathname = usePathname();
     const { isConnected } = useAccount();
 
+    // Wait for client-side hydration before accessing sessionStorage
     useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        // Don't run until component is mounted (client-side)
+        if (!isMounted) return;
+
         // Only show on dashboard routes (not landing page)
         if (pathname === "/" || pathname === "") {
             return;
         }
 
+        // Check sessionStorage to persist "hasShown" across page refreshes
+        const hasShownThisSession = sessionStorage.getItem(STORAGE_KEY);
+
         // Show popup if wallet is not connected and we haven't shown it yet this session
-        if (!isConnected && !hasShown) {
+        if (!isConnected && !hasShownThisSession) {
             setIsOpen(true);
-            setHasShown(true);
         }
-    }, [pathname, isConnected, hasShown]);
+    }, [pathname, isConnected, isMounted]);
 
     const handleClose = () => {
         setIsOpen(false);
+        // Mark as shown when user closes it
+        sessionStorage.setItem(STORAGE_KEY, "true");
     };
 
     return (

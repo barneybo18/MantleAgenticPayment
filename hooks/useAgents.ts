@@ -78,6 +78,38 @@ export function useAgents() {
         enabled: isContractAvailable
     });
 
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'ScheduledPaymentCancelled',
+        onLogs: () => { console.log('Cancellation/Delete detected'); refetch(); },
+        enabled: isContractAvailable
+    });
+
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'AgentStatusUpdated',
+        onLogs: () => { console.log('Status update detected'); refetch(); },
+        enabled: isContractAvailable
+    });
+
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'ScheduledPaymentCreated',
+        onLogs: () => { console.log('Agent Created detected'); refetch(); },
+        enabled: isContractAvailable
+    });
+
+    useWatchContractEvent({
+        address: isContractAvailable ? contractAddress : undefined,
+        abi: AGENT_PAY_ABI,
+        eventName: 'ScheduledPaymentUpdated',
+        onLogs: () => { console.log('Agent Update detected'); refetch(); },
+        enabled: isContractAvailable
+    });
+
     return {
         agents,
         isLoading: loadingIds || loadingAgents,

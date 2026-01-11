@@ -6,10 +6,10 @@ import { formatId } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bot, RefreshCw, Trash2, Wallet, Plus, Loader2, Pause, Play, Coins, AlertCircle } from "lucide-react";
+import { Bot, RefreshCw, Trash2, Wallet, Plus, Loader2, Pause, Play, Coins, AlertCircle, Pencil, Calendar } from "lucide-react";
 import Link from "next/link";
 import { ClientDate } from "@/components/ClientDate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTopUpAgent } from "@/hooks/useTopUpAgent";
 import { useDeleteAgent } from "@/hooks/useDeleteAgent";
 import { useToggleAgentStatus } from "@/hooks/useToggleAgentStatus";
@@ -44,6 +44,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { EditAgentModal } from "@/components/EditAgentModal";
 
 interface AgentCardProps {
     agent: ScheduledPayment;
@@ -53,17 +54,25 @@ interface AgentCardProps {
 
 export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     const { topUpAgent, isPending: isTopUpPending } = useTopUpAgent();
-    const { deleteAgent, isPending: isDeletePending } = useDeleteAgent();
+    const { deleteAgent, isPending: isDeletePending, isSuccess: isDeleteSuccess, error: deleteError, resetState: resetDeleteState } = useDeleteAgent();
     const { toggleAgentStatus, isPending: isTogglePending } = useToggleAgentStatus();
     const chainId = useChainId();
 
     const [topUpAmount, setTopUpAmount] = useState("");
     const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showRestartGuide, setShowRestartGuide] = useState(false);
 
     const tokenInfo = SUPPORTED_TOKENS.find(t => t.address === agent.token);
     const symbol = tokenInfo?.symbol || (agent.token === NATIVE_TOKEN ? "MNT" : "Tokens");
     const decimals = tokenInfo?.decimals || 18;
     const isNative = agent.token === NATIVE_TOKEN;
+
+    // Check if agent is terminated (Inactive + Past End Date)
+    // We use a safe client-side check. If contract says !isActive and date is past, it's done.
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const isTerminated = !agent.isActive && agent.endDate > 0n && now >= agent.endDate;
 
     // Token Approval for Top Up
     const config = CONTRACT_CONFIG[chainId];
@@ -78,6 +87,36 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     const topUpAmountBigInt = topUpAmount ? parseUnits(topUpAmount, decimals) : 0n;
     const needsApproval = !isNative && topUpAmountBigInt > 0n && allowance < topUpAmountBigInt;
 
+    // Track delete success to show toast and refetch
+    useEffect(() => {
+        if (isDeleteSuccess && isDeleting) {
+            toast.success("Agent deleted!", { description: "Funds have been refunded to your wallet." });
+            setIsDeleting(false);
+            resetDeleteState();
+            // Immediate refetch
+            onUpdate();
+        }
+    }, [isDeleteSuccess, isDeleting, onUpdate, resetDeleteState]);
+
+    // Handle Restart Guide Flow
+    useEffect(() => {
+        if (showRestartGuide && agent.isActive) {
+            // Agent just became active after restart click
+            setShowRestartGuide(false);
+            setIsEditOpen(true);
+            toast.info("Agent Resumed", { description: "Now remove the termination date to keep it running!" });
+        }
+    }, [showRestartGuide, agent.isActive]);
+
+    // Track delete error
+    useEffect(() => {
+        if (deleteError && isDeleting) {
+            toast.error("Failed to delete agent", { description: deleteError.message || "Transaction failed" });
+            setIsDeleting(false);
+            resetDeleteState();
+        }
+    }, [deleteError, isDeleting, resetDeleteState]);
+
     const handleTopUp = async () => {
         if (!topUpAmount) return;
         try {
@@ -89,10 +128,12 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
 
             setIsTopUpOpen(false);
             setTopUpAmount("");
-            // Wait for confirmation
-            setTimeout(onUpdate, 2000);
+            toast.success("Top up successful!");
+            // Refetch immediately
+            onUpdate();
         } catch (e) {
             console.error(e);
+            toast.error("Top up failed");
         }
     };
 
@@ -104,24 +145,29 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
 
     const handleToggleStatus = async () => {
         try {
+            if (isTerminated) {
+                setShowRestartGuide(true); // Flag to open edit modal after success
+            }
             await toggleAgentStatus(agent.id, !agent.isActive);
-            // Wait for confirmation
-            setTimeout(onUpdate, 2000);
+            toast.success(agent.isActive ? "Agent paused" : "Agent resumed");
+            // Refetch immediately via hook update
+            onUpdate();
         } catch (e) {
             console.error(e);
+            toast.error("Failed to update agent status");
+            setShowRestartGuide(false);
         }
     };
 
     const handleDelete = async () => {
-        try {
-            toast.info("Deleting agent...", { description: "Please confirm in your wallet" });
-            await deleteAgent(agent.id);
-            toast.success("Agent deleted!", { description: "Funds have been refunded to your wallet." });
-            setTimeout(onUpdate, 2000);
-        } catch (e) {
-            console.error(e);
-            toast.error("Failed to delete agent");
+        toast.info("Deleting agent...", { description: "Please confirm in your wallet" });
+        setIsDeleting(true);
+        const success = await deleteAgent(agent.id);
+        if (!success) {
+            setIsDeleting(false);
+            toast.error("Failed to delete agent", { description: "Transaction was rejected" });
         }
+        // Success/error will be handled by useEffect when transaction confirms
     };
 
     const formatInterval = (seconds: bigint) => {
@@ -135,10 +181,10 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     const displayBalance = isNative ? agent.balance : agent.tokenBalance;
 
     return (
-        <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+        <Card className={`relative overflow-hidden border-2 transition-colors ${isTerminated ? 'border-orange-500/20 bg-orange-50/10' : 'hover:border-primary/50'}`}>
             <div className="absolute top-0 right-0 p-4">
-                <Badge variant={agent.isActive ? "default" : "secondary"}>
-                    {agent.isActive ? "Active" : "Paused"}
+                <Badge variant={isTerminated ? "destructive" : (agent.isActive ? "default" : "secondary")}>
+                    {isTerminated ? "Terminated" : (agent.isActive ? "Active" : "Paused")}
                 </Badge>
             </div>
 
@@ -189,9 +235,20 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                     <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Next Payment</span>
                         <span className="font-medium text-xs">
-                            <ClientDate timestamp={Number(agent.nextExecution)} />
+                            {isTerminated ? <span>--</span> : <ClientDate timestamp={Number(agent.nextExecution)} />}
                         </span>
                     </div>
+                    {agent.endDate && agent.endDate > 0n && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Calendar className="size-3" />
+                                {isTerminated ? "Terminated On" : "Terminates"}
+                            </span>
+                            <span className={`font-medium text-xs ${isTerminated ? "text-red-500" : "text-orange-500"}`}>
+                                <ClientDate timestamp={Number(agent.endDate)} />
+                            </span>
+                        </div>
+                    )}
                 </div>
             </CardContent>
 
@@ -213,6 +270,8 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                             >
                                 {isTogglePending ? (
                                     <Loader2 className="size-4 animate-spin" />
+                                ) : isTerminated ? (
+                                    <RefreshCw className="size-4" />
                                 ) : agent.isActive ? (
                                     <Pause className="size-4" />
                                 ) : (
@@ -221,10 +280,41 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>{agent.isActive ? "Pause Agent" : "Resume Agent"}</p>
+                            <p>{isTerminated ? "Restart Agent" : (agent.isActive ? "Pause Agent" : "Resume Agent")}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
+
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setIsEditOpen(true)}
+                                    disabled={!agent.isActive && !isTerminated} // Allow edit if active OR if we want to show them they can't edit? No, contract blocks !isActive.
+                                // Wait, if isTerminated, !isActive is true. So disabled. 
+                                // We ONLY want to enable Edit if isActive.
+                                // But for Terminated, we force them to Resume first (via Restart button).
+                                // So Edit SHOULD be disabled for isTerminated.
+                                >
+                                    <Pencil className="size-4" />
+                                </Button>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{!agent.isActive ? "Resume agent to edit" : "Edit Agent"}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+
+                <EditAgentModal
+                    agent={agent}
+                    isOpen={isEditOpen}
+                    onClose={() => setIsEditOpen(false)}
+                    onUpdate={onUpdate}
+                />
 
                 <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
                     <DialogTrigger asChild>
