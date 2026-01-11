@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentPay - Agentic Payments on Mantle",
-  description: "Decentralized automated payments powered by agents.",
+  title: "Bogent - AI-Powered Payments on Mantle",
+  description: "Autonomous AI agents for decentralized payments on Mantle Network.",
 };
 
 export default function RootLayout({

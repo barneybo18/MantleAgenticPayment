@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
+import Image from "next/image";
 import {
     Dialog,
     DialogContent,
@@ -41,11 +42,17 @@ export function WelcomePopup() {
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader className="text-center sm:text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/70 shadow-lg shadow-primary/30">
-                        <span className="text-2xl font-bold text-primary-foreground">AP</span>
+                    <div className="mx-auto mb-4">
+                        <Image
+                            src="/bogent-logo.png"
+                            alt="Bogent"
+                            width={64}
+                            height={64}
+                            className="rounded-xl shadow-lg shadow-primary/30"
+                        />
                     </div>
                     <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-foreground to-muted-foreground">
-                        Welcome to AgentPay! 🎉
+                        Welcome to Bogent! 🎉
                     </DialogTitle>
                     <DialogDescription className="text-base pt-2">
                         Your gateway to autonomous, decentralized payments on Mantle Network.

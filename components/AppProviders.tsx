@@ -46,7 +46,7 @@ const mantleSepolia = defineChain({
 const { wallets } = getDefaultWallets();
 
 const config = getDefaultConfig({
-    appName: 'AgentPay',
+    appName: 'Bogent',
     projectId: 'YOUR_PROJECT_ID', // Replace with WalletConnect project ID
     wallets: [
         ...wallets,

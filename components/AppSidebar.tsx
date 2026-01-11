@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, FileText, Bot, Menu } from "lucide-react";
@@ -49,10 +50,14 @@ export function MobileMenuTrigger() {
             <SheetContent side="left" className="w-64 p-0">
                 <SheetHeader className="p-4 border-b">
                     <SheetTitle className="flex items-center gap-2">
-                        <div className="size-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                            AP
-                        </div>
-                        <span>AgentPay</span>
+                        <Image
+                            src="/bogent-logo.png"
+                            alt="Bogent"
+                            width={32}
+                            height={32}
+                            className="rounded"
+                        />
+                        <span>Bogent</span>
                     </SheetTitle>
                 </SheetHeader>
                 <nav className="grid gap-1 p-4">
@@ -89,10 +94,14 @@ export function AppSidebar() {
     return (
         <div className="hidden md:flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
             <div className="p-4 border-b flex items-center gap-2">
-                <div className="size-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                    AP
-                </div>
-                <span className="font-bold text-lg">AgentPay</span>
+                <Image
+                    src="/bogent-logo.png"
+                    alt="Bogent"
+                    width={32}
+                    height={32}
+                    className="rounded"
+                />
+                <span className="font-bold text-lg">Bogent</span>
             </div>
             <div className="flex-1 py-4">
                 <nav className="grid gap-1 px-2">
