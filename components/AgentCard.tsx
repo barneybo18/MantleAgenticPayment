@@ -160,12 +160,12 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     };
 
     const handleDelete = async () => {
-        toast.info("Deleting agent...", { description: "Please confirm in your wallet" });
+        toast.info("Deleting agent...", { description: "Verifying transaction..." });
         setIsDeleting(true);
-        const success = await deleteAgent(agent.id);
-        if (!success) {
+        const result = await deleteAgent(agent.id);
+        if (!result.success) {
             setIsDeleting(false);
-            toast.error("Failed to delete agent", { description: "Transaction was rejected" });
+            toast.error("Failed to delete agent", { description: result.error || "Transaction was rejected" });
         }
         // Success/error will be handled by useEffect when transaction confirms
     };

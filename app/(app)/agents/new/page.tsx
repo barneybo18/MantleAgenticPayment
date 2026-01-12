@@ -85,20 +85,21 @@ export default function NewAgentPage() {
         setTxState('confirming');
         setTxError(undefined);
 
-        try {
-            await createAgent(
-                recipient,
-                parseUnits(amount, selectedToken.decimals),
-                finalTokenAddress,
-                BigInt(interval),
-                description,
-                isNative ? parseUnits(initialDeposit, 18) : 0n, // MNT Deposit (value)
-                isNative ? 0n : depositAmountBigInt, // Token Deposit
-                (endDate && endTime) ? BigInt(Math.floor(new Date(`${endDate}T${endTime}`).getTime() / 1000)) : 0n
-            );
-        } catch (err: any) {
+        const result = await createAgent(
+            recipient,
+            parseUnits(amount, selectedToken.decimals),
+            finalTokenAddress,
+            BigInt(interval),
+            description,
+            isNative ? parseUnits(initialDeposit, 18) : 0n, // MNT Deposit (value)
+            isNative ? 0n : depositAmountBigInt, // Token Deposit
+            (endDate && endTime) ? BigInt(Math.floor(new Date(`${endDate}T${endTime}`).getTime() / 1000)) : 0n
+        );
+
+        if (!result.success) {
             setTxState('error');
-            setTxError(err.message || "Transaction failed");
+            setTxError(result.error || "Transaction failed");
+            toast.error("Failed to create agent", { description: result.error });
         }
     };
 

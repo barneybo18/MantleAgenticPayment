@@ -4,7 +4,7 @@ const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
 
 // Network-specific contract addresses
 const CONTRACT_CONFIG = {
-    5003: "0xA1c85b0176F5500Ce050D843e9D3B4B057519B33", // Mantle Sepolia - Updated
+    5003: "0x73B9105DF1D8E1A790ac999dbd5244AeF33527B7", // Mantle Sepolia - Updated 2026-01-12
     5000: "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3", // Mantle Mainnet
 };
 

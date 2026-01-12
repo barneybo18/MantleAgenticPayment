@@ -4,13 +4,13 @@ import { useReadContract, useReadContracts, useWatchContractEvent, useChainId } 
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, ScheduledPayment, NATIVE_TOKEN } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 
-// Cache configuration
+// Cache configuration - optimized for faster reactivity after transactions
 const QUERY_CONFIG = {
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
+    staleTime: 10_000,           // 10 seconds (reduced from 30)
+    gcTime: 2 * 60_000,          // 2 minutes (reduced from 5)
+    refetchOnWindowFocus: true,  // Enable for immediate updates when tab regains focus
+    refetchOnMount: true,        // Enable for fresh data on component mount
+    refetchOnReconnect: true,    // Enable for updates after network reconnect
 };
 
 export function useAgents() {

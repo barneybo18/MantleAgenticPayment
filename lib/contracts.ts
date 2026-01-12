@@ -1,8 +1,9 @@
 import { Address } from 'viem';
 
-// Deployed on Mantle Sepolia testnet
-export const AGENT_PAY_ADDRESS_SEPOLIA = "0xA1c85b0176F5500Ce050D843e9D3B4B057519B33" as const;
-export const AGENT_PAY_DEPLOY_BLOCK_SEPOLIA = 33310039n; // Approx updated block
+// Deployed on Mantle Sepolia testnet (Updated: 2026-01-12)
+// Allows actions on paused/terminated agents
+export const AGENT_PAY_ADDRESS_SEPOLIA = "0x73B9105DF1D8E1A790ac999dbd5244AeF33527B7" as const;
+export const AGENT_PAY_DEPLOY_BLOCK_SEPOLIA = 33345633n;
 
 // Mainnet Deployment
 export const AGENT_PAY_ADDRESS_MAINNET = "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3" as const;

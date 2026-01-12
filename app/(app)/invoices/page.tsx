@@ -30,8 +30,8 @@ import {
 function InvoicesContent() {
     const { isConnected, address } = useAccount();
     const { invoices, isLoading, refetch } = useInvoices();
-    const { payInvoice, isPending: paying } = usePayInvoice();
-    const { cancelInvoice, isPending: cancelling } = useCancelInvoice();
+    const { payInvoice, isPending: paying, isSuccess: paySuccess } = usePayInvoice();
+    const { cancelInvoice, isPending: cancelling, isSuccess: cancelSuccess } = useCancelInvoice();
     const [payingId, setPayingId] = useState<bigint | null>(null);
     const [cancellingId, setCancellingId] = useState<bigint | null>(null);
 
@@ -57,17 +57,30 @@ function InvoicesContent() {
         }
     }, [searchParams]);
 
+    // Clear paying state when transaction completes
+    useEffect(() => {
+        if (paySuccess && payingId !== null) {
+            setPayingId(null);
+        }
+    }, [paySuccess, payingId]);
+
+    // Clear cancelling state when transaction completes
+    useEffect(() => {
+        if (cancelSuccess && cancellingId !== null) {
+            setCancellingId(null);
+        }
+    }, [cancelSuccess, cancellingId]);
+
+
     const handlePay = async (invoiceId: bigint, amount: bigint) => {
         setPayingId(invoiceId);
         try {
-            await payInvoice(invoiceId, amount);
-            // Wait a bit for tx to confirm then refetch
-            setTimeout(() => {
-                refetch();
+            const success = await payInvoice(invoiceId, amount);
+            // Hook automatically invalidates cache on transaction confirmation
+            // Keep payingId until hook's isPending becomes false
+            if (!success) {
                 setPayingId(null);
-                // We do NOT close the modal, so user sees "Paid" status update!
-                // setSelectedInvoiceId(null); 
-            }, 2000);
+            }
         } catch (e) {
             setPayingId(null);
         }
@@ -76,13 +89,11 @@ function InvoicesContent() {
     const handleCancel = async (invoiceId: bigint) => {
         setCancellingId(invoiceId);
         try {
-            await cancelInvoice(invoiceId);
-            // Wait a bit for tx to confirm then refetch
-            setTimeout(() => {
-                refetch();
+            const success = await cancelInvoice(invoiceId);
+            // Hook automatically invalidates cache on transaction confirmation
+            if (!success) {
                 setCancellingId(null);
-                // setSelectedInvoiceId(null);
-            }, 2000);
+            }
         } catch (e) {
             setCancellingId(null);
         }

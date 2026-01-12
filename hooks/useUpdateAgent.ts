@@ -1,50 +1,98 @@
 "use client";
 
-import { useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
+import { useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from "wagmi";
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from "@/lib/contracts";
 import { useState, useEffect, useCallback } from "react";
+import { useInvalidateQueries } from "./useInvalidateQueries";
+
+// Helper to extract readable error message from contract revert
+function extractErrorMessage(error: unknown): string {
+    const errorStr = String(error);
+    if (errorStr.includes("Not owner")) return "You are not the owner of this agent";
+    if (errorStr.includes("End date too soon")) return "End date must be further in the future";
+    if (errorStr.includes("execution reverted")) {
+        const match = errorStr.match(/reason:\s*([^,]+)/i);
+        if (match) return match[1].trim();
+    }
+    return "Transaction would fail. Please try again.";
+}
 
 export function useUpdateAgent() {
     const { writeContractAsync, data: hash, isPending: isWritePending, error: writeError, reset } = useWriteContract();
     const { isLoading: isConfirming, isSuccess, error: receiptError } = useWaitForTransactionReceipt({ hash });
     const chainId = useChainId();
+    const publicClient = usePublicClient();
+    const { invalidateAll } = useInvalidateQueries();
     const [isUpdating, setIsUpdating] = useState(false);
+    const [simulationError, setSimulationError] = useState<string | null>(null);
 
-    const updateAgent = useCallback(async (id: bigint, endDate: bigint): Promise<boolean> => {
+    // Invalidate queries when transaction succeeds
+    useEffect(() => {
+        if (isSuccess && isUpdating) {
+            console.log("Agent update confirmed, invalidating queries...");
+            invalidateAll();
+            setIsUpdating(false);
+        }
+    }, [isSuccess, isUpdating, invalidateAll]);
+
+    // Reset on error
+    useEffect(() => {
+        if (receiptError && isUpdating) {
+            setIsUpdating(false);
+        }
+    }, [receiptError, isUpdating]);
+
+    const updateAgent = useCallback(async (id: bigint, endDate: bigint): Promise<{ success: boolean; error?: string }> => {
         const config = CONTRACT_CONFIG[chainId];
         const address = config?.address;
 
         if (!address || address === NATIVE_TOKEN) {
-            console.error("Contract not deployed on this chain");
-            return false;
+            return { success: false, error: "Contract not deployed on this chain" };
+        }
+
+        if (!publicClient) {
+            return { success: false, error: "Wallet not connected" };
         }
 
         setIsUpdating(true);
+        setSimulationError(null);
+
+        // Step 1: Simulate the transaction
+        try {
+            await publicClient.simulateContract({
+                address: address,
+                abi: AGENT_PAY_ABI,
+                functionName: "updateScheduledPayment",
+                args: [id, endDate],
+            });
+        } catch (simError) {
+            const errorMsg = extractErrorMessage(simError);
+            console.error("Simulation failed:", simError);
+            setSimulationError(errorMsg);
+            setIsUpdating(false);
+            return { success: false, error: errorMsg };
+        }
+
+        // Step 2: Proceed with transaction
         try {
             await writeContractAsync({
                 address: address,
                 abi: AGENT_PAY_ABI,
                 functionName: "updateScheduledPayment",
-                args: [id, endDate]
+                args: [id, endDate],
             });
-            return true;
+            return { success: true };
         } catch (e) {
             console.error("Update agent error:", e);
             setIsUpdating(false);
-            return false;
+            return { success: false, error: extractErrorMessage(e) };
         }
-    }, [chainId, writeContractAsync]);
-
-    // Reset updating state when transaction completes (success or error)
-    useEffect(() => {
-        if (isSuccess || receiptError) {
-            setIsUpdating(false);
-        }
-    }, [isSuccess, receiptError]);
+    }, [chainId, writeContractAsync, publicClient]);
 
     const resetState = useCallback(() => {
         reset();
         setIsUpdating(false);
+        setSimulationError(null);
     }, [reset]);
 
     return {
@@ -53,6 +101,7 @@ export function useUpdateAgent() {
         isPending: isWritePending || isConfirming || isUpdating,
         isSuccess,
         error: writeError || receiptError,
+        simulationError,
         resetState
     };
 }

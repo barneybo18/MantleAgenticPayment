@@ -19,9 +19,9 @@ export default function DashboardLayout({
                 <header className="h-14 border-b px-4 md:px-6 flex items-center justify-between bg-card gap-2">
                     <div className="flex items-center gap-2">
                         <MobileMenuTrigger />
-                        <Link href="/" className="font-semibold text-lg hover:text-primary transition-colors">
+                        {/* <Link href="/" className="font-semibold text-lg hover:text-primary transition-colors">
                             Bogent
-                        </Link>
+                        </Link> */}
                     </div>
                     <div className="flex items-center gap-2 md:gap-4">
                         <ThemeToggle />

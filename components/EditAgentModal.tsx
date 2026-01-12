@@ -137,24 +137,24 @@ export function EditAgentModal({ agent, isOpen, onClose, onUpdate }: EditAgentMo
         const { valid, timestamp } = validateEndDate();
         if (!valid) return;
 
-        toast.info("Updating agent...", { description: "Please confirm in your wallet" });
+        toast.info("Updating agent...", { description: "Verifying transaction..." });
         setIsSubmitting(true);
 
-        const success = await updateAgent(agent.id, timestamp);
-        if (!success) {
+        const result = await updateAgent(agent.id, timestamp);
+        if (!result.success) {
             setIsSubmitting(false);
-            toast.error("Failed to update agent", { description: "Transaction was rejected" });
+            toast.error("Failed to update agent", { description: result.error || "Transaction was rejected" });
         }
     };
 
     const handleClearEndDate = async () => {
-        toast.info("Removing termination date...", { description: "Please confirm in your wallet" });
+        toast.info("Removing termination date...", { description: "Verifying transaction..." });
         setIsSubmitting(true);
 
-        const success = await updateAgent(agent.id, 0n);
-        if (!success) {
+        const result = await updateAgent(agent.id, 0n);
+        if (!result.success) {
             setIsSubmitting(false);
-            toast.error("Failed to update agent", { description: "Transaction was rejected" });
+            toast.error("Failed to update agent", { description: result.error || "Transaction was rejected" });
         }
     };
 

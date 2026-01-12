@@ -223,7 +223,7 @@ contract AgentPay is Ownable, ReentrancyGuard {
     ) external {
         ScheduledPayment storage payment = scheduledPayments[_id];
         require(payment.from == msg.sender, "Not owner");
-        require(payment.isActive, "Agent not active");
+        // Removed isActive check: Allow editing paused agents
         
         // Validate end date if provided
         if (_endDate != 0) {
@@ -266,7 +266,8 @@ contract AgentPay is Ownable, ReentrancyGuard {
     function cancelScheduledPayment(uint256 _id) external nonReentrant {
         ScheduledPayment storage payment = scheduledPayments[_id];
         require(payment.from == msg.sender, "Not owner");
-        require(payment.isActive, "Already cancelled");
+        // Removed isActive check: Allow claiming refunds from paused/terminated agents
+        require(payment.balance > 0 || payment.tokenBalance > 0, "No funds to refund");
         
         payment.isActive = false;
         
