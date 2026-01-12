@@ -2,9 +2,10 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, XCircle, ExternalLink, AlertTriangle } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { getExplorerUrl } from "@/lib/mantle";
 import { useChainId } from "wagmi";
+import Image from "next/image";
 
 export type TransactionState = 'idle' | 'confirming' | 'pending' | 'success' | 'error';
 
@@ -37,34 +38,74 @@ export function TransactionModal({
 }: TransactionModalProps) {
     const chainId = useChainId();
 
+    // Parse error message to be user-friendly
+    const getFriendlyError = (errorMsg?: string) => {
+        if (!errorMsg) return "Something went wrong. Please try again.";
+
+        const lowerError = errorMsg.toLowerCase();
+
+        // User cancelled/rejected the transaction
+        if (lowerError.includes('user denied') ||
+            lowerError.includes('user rejected') ||
+            lowerError.includes('denied request signature') ||
+            lowerError.includes('user cancelled')) {
+            return "You cancelled the transaction.";
+        }
+
+        // Insufficient funds
+        if (lowerError.includes('insufficient funds') || lowerError.includes('insufficient balance')) {
+            return "Insufficient funds in your wallet.";
+        }
+
+        // Gas estimation failed
+        if (lowerError.includes('gas') && lowerError.includes('estimation')) {
+            return "Transaction would fail. Please check your inputs.";
+        }
+
+        // Network issues
+        if (lowerError.includes('network') || lowerError.includes('timeout')) {
+            return "Network error. Please try again.";
+        }
+
+        // Default: truncate long errors
+        if (errorMsg.length > 100) {
+            return "Transaction failed. Please try again.";
+        }
+
+        return errorMsg;
+    };
+
     const getContent = () => {
         switch (state) {
             case 'confirming':
                 return {
-                    icon: <Loader2 className="size-12 text-primary animate-spin" />,
+                    icon: <Image src="/bogent-loading.gif" alt="Loading" width={80} height={80} unoptimized />,
                     title: "Waiting for Confirmation",
                     description: description || "Please confirm the transaction in your wallet...",
                     showCancel: true
                 };
             case 'pending':
                 return {
-                    icon: <Loader2 className="size-12 text-primary animate-spin" />,
+                    icon: <Image src="/bogent-loading.gif" alt="Loading" width={80} height={80} unoptimized />,
                     title: "Transaction Pending",
                     description: "Waiting for blockchain confirmation...",
                     showCancel: false
                 };
             case 'success':
                 return {
-                    icon: <CheckCircle2 className="size-12 text-green-500" />,
+                    icon: <Image src="/bogent-success.png" alt="Success" width={80} height={80} />,
                     title: "Success!",
                     description: successMessage,
                     showCancel: false
                 };
             case 'error':
+                const isCancelled = error?.toLowerCase().includes('denied') ||
+                    error?.toLowerCase().includes('rejected') ||
+                    error?.toLowerCase().includes('cancelled');
                 return {
-                    icon: <XCircle className="size-12 text-destructive" />,
-                    title: "Transaction Failed",
-                    description: error || "Something went wrong. Please try again.",
+                    icon: <Image src="/bogent-error.png" alt="Error" width={80} height={80} />,
+                    title: isCancelled ? "Transaction Cancelled" : "Transaction Failed",
+                    description: getFriendlyError(error),
                     showCancel: false
                 };
             default:

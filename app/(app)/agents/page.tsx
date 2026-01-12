@@ -6,6 +6,7 @@ import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Bot } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,9 +79,13 @@ export default function AgentsPage() {
                             <TabsContent value="all" className="space-y-4">
                                 {visibleAgents.length === 0 ? (
                                     <div className="text-center py-12 space-y-4 border-2 border-dashed rounded-lg">
-                                        <div className="p-4 bg-muted/50 rounded-full inline-block">
-                                            <Bot className="size-8 text-muted-foreground" />
-                                        </div>
+                                        <Image
+                                            src="/bogent-empty.png"
+                                            alt="No agents"
+                                            width={120}
+                                            height={120}
+                                            className="mx-auto"
+                                        />
                                         <div className="space-y-2">
                                             <h3 className="text-lg font-medium">No Agents</h3>
                                             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -115,9 +120,13 @@ export default function AgentsPage() {
                             <TabsContent value="active" className="space-y-4">
                                 {activeAgents.length === 0 ? (
                                     <div className="text-center py-12 space-y-4 border-2 border-dashed rounded-lg">
-                                        <div className="p-4 bg-muted/50 rounded-full inline-block">
-                                            <Bot className="size-8 text-muted-foreground" />
-                                        </div>
+                                        <Image
+                                            src="/bogent-empty.png"
+                                            alt="No active agents"
+                                            width={120}
+                                            height={120}
+                                            className="mx-auto"
+                                        />
                                         <div className="space-y-2">
                                             <h3 className="text-lg font-medium">No Active Agents</h3>
                                             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -151,7 +160,14 @@ export default function AgentsPage() {
 
                             <TabsContent value="paused" className="space-y-4">
                                 {pausedAgents.length === 0 ? (
-                                    <div className="text-center py-12">
+                                    <div className="text-center py-12 space-y-4 border-2 border-dashed rounded-lg">
+                                        <Image
+                                            src="/bogent-empty.png"
+                                            alt="No paused agents"
+                                            width={100}
+                                            height={100}
+                                            className="mx-auto"
+                                        />
                                         <p className="text-muted-foreground">No paused agents.</p>
                                     </div>
                                 ) : (
