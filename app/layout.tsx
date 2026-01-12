@@ -31,7 +31,6 @@ export default function RootLayout({
           defaultTheme="black"
           themes={["light", "dark", "black"]}
           enableSystem
-          disableTransitionOnChange
         >
           <AppProviders>
             {children}
