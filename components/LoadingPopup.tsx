@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Image from "next/image";
 
 export function LoadingPopup() {
     const [isLoading, setIsLoading] = useState(false);
@@ -40,11 +40,19 @@ export function LoadingPopup() {
             {/* Blurred backdrop */}
             <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
 
-            {/* Loading popup */}
-            <div className="relative z-10 flex flex-col items-center gap-3 rounded-xl bg-card border shadow-2xl px-8 py-6">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm font-medium text-muted-foreground">Please wait...</p>
+            {/* Loading popup with animated logo - dark bg for consistent GIF appearance */}
+            <div className="relative z-10 flex flex-col items-center gap-3 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl px-8 py-6">
+                <Image
+                    src="/bogent-loading.gif"
+                    alt="Loading..."
+                    width={80}
+                    height={80}
+                    className="rounded-lg"
+                    unoptimized // Required for GIFs to animate
+                />
+                <p className="text-sm font-medium text-slate-300">Loading...</p>
             </div>
         </div>
     );
 }
+

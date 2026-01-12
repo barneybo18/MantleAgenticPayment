@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import Image from "next/image";
 import { Plus, Loader2, FileText, CheckCircle, Share2, Eye, XCircle, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useInvoices } from "@/hooks/useInvoices";
 import { usePayInvoice } from "@/hooks/usePayInvoice";
@@ -180,10 +181,16 @@ function InvoicesContent() {
                         key="empty"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-16 border rounded-lg"
+                        className="text-center py-16 border-2 border-dashed rounded-lg space-y-4"
                     >
-                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-muted-foreground mb-4">No invoices yet</p>
+                        <Image
+                            src="/bogent-empty.png"
+                            alt="No invoices"
+                            width={120}
+                            height={120}
+                            className="mx-auto"
+                        />
+                        <p className="text-muted-foreground">No invoices yet</p>
                         <Button asChild>
                             <Link href="/invoices/new">Create your first invoice</Link>
                         </Button>

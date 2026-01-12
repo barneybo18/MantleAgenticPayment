@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { ChevronLeft, Loader2, CheckCircle, User, Wallet, Coins, Calendar, FileText } from "lucide-react";
+import Image from "next/image";
+import { ChevronLeft, Loader2, User, Wallet, Coins, Calendar, FileText } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useCreateInvoice } from "@/hooks/useCreateInvoice";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,7 @@ import { useAccount, useChainId } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { SUPPORTED_TOKENS, NATIVE_TOKEN } from "@/lib/contracts";
 import { parseUnits } from "viem";
+import { TransactionModal, TransactionState } from "@/components/TransactionModal";
 
 export default function NewInvoicePage() {
     const router = useRouter();
@@ -28,6 +30,10 @@ export default function NewInvoicePage() {
     const [token, setToken] = useState(NATIVE_TOKEN);
     const [date, setDate] = useState("");
     const [desc, setDesc] = useState("");
+
+    // Transaction state tracking
+    const [txState, setTxState] = useState<TransactionState>('idle');
+    const [txError, setTxError] = useState<string | undefined>();
 
     // Filter tokens based on current chain
     const availableTokens = useMemo(() => {
@@ -48,15 +54,22 @@ export default function NewInvoicePage() {
         setDate(defaultDate.toISOString().split('T')[0]);
     }, []);
 
-    // Redirect on success
+    // Watch for transaction state changes
     useEffect(() => {
-        if (isSuccess) {
-            const timer = setTimeout(() => {
-                router.push('/invoices');
-            }, 2000);
-            return () => clearTimeout(timer);
+        if (isPending && txState === 'confirming') {
+            setTxState('pending');
         }
-    }, [isSuccess, router]);
+        if (isSuccess && hash) {
+            setTxState('success');
+        }
+    }, [isPending, isSuccess, hash, txState]);
+
+    useEffect(() => {
+        if (error) {
+            setTxState('error');
+            setTxError(error.message || "Transaction failed");
+        }
+    }, [error]);
 
     const handleSubmit = async () => {
         if (!recipient || !amount || !date) return;
@@ -66,6 +79,9 @@ export default function NewInvoicePage() {
             alert('Please enter a valid Ethereum address');
             return;
         }
+
+        setTxState('confirming');
+        setTxError(undefined);
 
         // Create JSON metadata with name and description
         const metadata = JSON.stringify({
@@ -78,9 +94,15 @@ export default function NewInvoicePage() {
 
         try {
             await createInvoice(recipient, amountInUnits, token, metadata, timestamp);
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            setTxState('error');
+            setTxError(e.message || "Transaction failed");
         }
+    };
+
+    const handleCancel = () => {
+        setTxState('idle');
+        setTxError(undefined);
     };
 
     if (!isConnected) {
@@ -91,30 +113,6 @@ export default function NewInvoicePage() {
                     <p className="text-muted-foreground">Connect your wallet to create invoices</p>
                 </div>
                 <ConnectButton />
-            </div>
-        );
-    }
-
-    if (isSuccess) {
-        return (
-            <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
-                <Card className="border-green-500/50">
-                    <CardContent className="pt-6">
-                        <div className="text-center space-y-4">
-                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-                            <h3 className="text-2xl font-bold">Invoice Created!</h3>
-                            <p className="text-muted-foreground">
-                                Your invoice has been created on-chain.
-                            </p>
-                            {hash && (
-                                <p className="text-xs text-muted-foreground font-mono">
-                                    Tx: {hash.slice(0, 10)}...{hash.slice(-8)}
-                                </p>
-                            )}
-                            <p className="text-sm text-muted-foreground">Redirecting to invoices...</p>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         );
     }
@@ -236,12 +234,6 @@ export default function NewInvoicePage() {
                             onChange={e => setDesc(e.target.value)}
                         />
                     </div>
-
-                    {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-md">
-                            <p className="text-red-500 text-sm">Error: {error.message}</p>
-                        </div>
-                    )}
                 </CardContent>
                 <CardFooter className="justify-end gap-2">
                     <Button variant="outline" asChild>
@@ -256,6 +248,21 @@ export default function NewInvoicePage() {
                     </Button>
                 </CardFooter>
             </Card>
+
+            {/* Transaction Status Modal */}
+            <TransactionModal
+                isOpen={txState !== 'idle'}
+                onClose={handleCancel}
+                onCancel={handleCancel}
+                state={txState}
+                title="Creating Invoice"
+                description="Creating your invoice on Mantle..."
+                txHash={hash}
+                error={txError}
+                successMessage="Your invoice has been created on-chain!"
+                onSuccessAction={() => router.push("/invoices")}
+                successActionLabel="View Invoices"
+            />
         </div>
     );
 }
