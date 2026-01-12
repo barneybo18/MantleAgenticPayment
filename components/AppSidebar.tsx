@@ -78,7 +78,7 @@ export function MobileMenuTrigger() {
                 </nav>
                 <div className="absolute bottom-0 left-0 right-0 p-4 border-t flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                        Mantle Agentic Hackathon
+                        Hackathon
                     </div>
                     <ThemeToggle />
                 </div>
@@ -122,7 +122,7 @@ export function AppSidebar() {
             </div>
             <div className="p-4 border-t flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
-                    Mantle Agentic Hackathon
+                    Bogent
                 </div>
                 <ThemeToggle />
             </div>
