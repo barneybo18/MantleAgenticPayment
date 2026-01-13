@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { useChainId, useAccount } from "wagmi";
 import { Wifi, WifiOff } from "lucide-react";
 
-const NETWORK_INFO: Record<number, { name: string; type: "mainnet" | "testnet" | "local" }> = {
-    5000: { name: "Mantle", type: "mainnet" },
-    5003: { name: "Mantle Sepolia", type: "testnet" },
-    31337: { name: "Localhost", type: "local" },
-    1: { name: "Ethereum", type: "mainnet" },
+const NETWORK_INFO: Record<number, { name: string; shortName: string; type: "mainnet" | "testnet" | "local" }> = {
+    5000: { name: "Mantle", shortName: "MNT", type: "mainnet" },
+    5003: { name: "Mantle Sepolia", shortName: "Sep", type: "testnet" },
+    31337: { name: "Localhost", shortName: "Local", type: "local" },
+    1: { name: "Ethereum", shortName: "ETH", type: "mainnet" },
 };
 
 export function NetworkBadge() {
@@ -19,12 +19,12 @@ export function NetworkBadge() {
         return (
             <Badge variant="outline" className="gap-1.5 text-muted-foreground">
                 <WifiOff className="size-3" />
-                Not Connected
+                <span className="hidden sm:inline">Not Connected</span>
             </Badge>
         );
     }
 
-    const network = NETWORK_INFO[chainId] || { name: `Chain ${chainId}`, type: "testnet" as const };
+    const network = NETWORK_INFO[chainId] || { name: `Chain ${chainId}`, shortName: `#${chainId}`, type: "testnet" as const };
 
     const colorClasses = {
         mainnet: "bg-green-500/10 text-green-500 border-green-500/30",
@@ -35,9 +35,11 @@ export function NetworkBadge() {
     return (
         <Badge variant="outline" className={`gap-1.5 ${colorClasses[network.type]}`}>
             <Wifi className="size-3" />
-            {network.name}
+            {/* Short name on mobile, full name on desktop */}
+            <span className="sm:hidden">{network.shortName}</span>
+            <span className="hidden sm:inline">{network.name}</span>
             {network.type !== "mainnet" && (
-                <span className="text-xs opacity-75">({network.type})</span>
+                <span className="hidden md:inline text-xs opacity-75">({network.type})</span>
             )}
         </Badge>
     );

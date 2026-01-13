@@ -54,22 +54,28 @@ export default function NewInvoicePage() {
         setDate(defaultDate.toISOString().split('T')[0]);
     }, []);
 
+    // Track if modal was manually dismissed to prevent useEffect from reopening it
+    const [dismissed, setDismissed] = useState(false);
+
     // Watch for transaction state changes
     useEffect(() => {
+        if (dismissed) return; // Don't update state if user dismissed the modal
+
         if (isPending && txState === 'confirming') {
             setTxState('pending');
         }
         if (isSuccess && hash) {
             setTxState('success');
         }
-    }, [isPending, isSuccess, hash, txState]);
+    }, [isPending, isSuccess, hash, txState, dismissed]);
 
     useEffect(() => {
+        if (dismissed) return;
         if (error) {
             setTxState('error');
             setTxError(error.message || "Transaction failed");
         }
-    }, [error]);
+    }, [error, dismissed]);
 
     const handleSubmit = async () => {
         if (!recipient || !amount || !date) return;
@@ -101,6 +107,7 @@ export default function NewInvoicePage() {
     };
 
     const handleCancel = () => {
+        setDismissed(true);
         setTxState('idle');
         setTxError(undefined);
     };
