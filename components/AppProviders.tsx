@@ -12,9 +12,7 @@ import {
     trustWallet,
     ledgerWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import {
-    mantle,
-} from 'wagmi/chains';
+// Mainnet disabled for hackathon demo - testnet only
 import { defineChain } from 'viem';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, http } from 'wagmi';
@@ -55,9 +53,8 @@ const config = getDefaultConfig({
             wallets: [argentWallet, trustWallet, ledgerWallet],
         },
     ],
-    chains: [mantleSepolia, mantle],
+    chains: [mantleSepolia],
     transports: {
-        [mantle.id]: http(),
         [mantleSepolia.id]: http('https://rpc.sepolia.mantle.xyz'),
     },
     ssr: true,

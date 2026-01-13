@@ -1,10 +1,10 @@
-# 🤖 AgentPay - Autonomous Payments on Mantle
+# 🤖 BOGENT - Autonomous Payments on Mantle
 
 ![Mantle Network](https://img.shields.io/badge/Network-Mantle-green) 
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Status](https://img.shields.io/badge/Status-Hackathon_MVP-orange)
 
-**AgentPay** is a decentralized agentic payment platform built on the **Mantle Network**. It empowers users with AI-driven "agents" for autonomous payment handling, recurring scheduling, and seamless invoice management.
+**BOGENT** is a decentralized agentic payment platform built on the **Mantle Network**. It empowers users with AI-driven "agents" for autonomous payment handling, recurring scheduling, and seamless invoice management.
 
 ## 🚀 Key Features
 
@@ -14,6 +14,9 @@
 - **⚡ Multi-Token Support**: Native **$MNT**, **USDT**, **USDC**, **mETH**, **cmETH**, **WETH** - network-aware token selection.
 - **📊 Interactive Dashboard**: Click stat cards to drill down into payments received, pending invoices, and wallet details.
 - **🔄 Pause/Resume**: Full control over your agents with one-click pause and resume.
+- **✏️ Edit Paused Agents**: Update or delete agents even when they are paused or terminated.
+- **⏱️ Scheduled Termination**: Set end dates for agents to auto-terminate at a specific time.
+- **🔮 Transaction Simulation**: Pre-flight transaction checks for better error handling and UX.
 - **🕸️ Network Aware**: Automatically detects Mainnet/Testnet and uses the correct contract + tokens.
 - **📱 Fully Responsive**: Mobile-first design that works beautifully on all screen sizes.
 - **🔔 Transaction Feedback**: Real-time toast notifications and transaction modals with Mantlescan links.
@@ -24,9 +27,12 @@
 |----------|------------|
 | Blockchain | [Mantle Network](https://www.mantle.xyz/) |
 | Framework | [Next.js 16](https://nextjs.org/) (App Router + Turbopack) |
-| Styling | [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/) |
-| Web3 | [Wagmi](https://wagmi.sh/) + [RainbowKit](https://www.rainbowkit.com/) + [Viem](https://viem.sh/) |
+| React | [React 19](https://react.dev/) |
+| Styling | [Tailwind CSS 4](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/) |
+| Web3 | [Wagmi 2](https://wagmi.sh/) + [RainbowKit 2](https://www.rainbowkit.com/) + [Viem 2](https://viem.sh/) |
 | Smart Contracts | Solidity 0.8.27 + Hardhat |
+| State Management | [TanStack Query](https://tanstack.com/query) |
+| Animations | [Framer Motion](https://www.framer.com/motion/) + [Vanta.js](https://www.vantajs.com/) |
 
 ## 📜 Smart Contracts
 
@@ -34,6 +40,22 @@
 |---------|---------|----------|
 | **Mantle Mainnet** | `0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3` | [View](https://mantlescan.xyz/address/0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3) |
 | **Mantle Sepolia** | `0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8` | [View](https://sepolia.mantlescan.xyz/address/0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8) |
+
+### Contract Features
+
+The `AgentPay.sol` smart contract provides:
+
+| Function | Description |
+|----------|-------------|
+| `createInvoice()` | Create on-chain invoices with metadata, due dates, and token type |
+| `payInvoice()` | Pay invoices using native MNT or ERC20 tokens |
+| `cancelInvoice()` | Cancel unpaid invoices (creator only) |
+| `createScheduledPayment()` | Deploy autonomous payment agents with initial funding |
+| `updateScheduledPayment()` | Update agent end dates (works on paused agents) |
+| `executeScheduledPayment()` | Execute due payments (called by worker/keeper) |
+| `cancelScheduledPayment()` | Terminate agent and refund remaining balance (works on paused agents) |
+| `toggleAgentStatus()` | Pause or resume an agent |
+| `topUpAgent()` | Add more funds to an active agent |
 
 ## 📦 Installation
 
@@ -90,21 +112,53 @@ npx hardhat run scripts/deploy.js --network mantleSepolia
 - **ReentrancyGuard**: Protected against reentrancy attacks.
 - **Non-Custodial**: Users verify all transactions via their wallet.
 - **Funded Agents**: Agents hold their own funds - no approvals needed at execution time.
+- **Transaction Simulation**: Pre-flight checks prevent failed transactions and provide clear error messages.
 
 ## 📁 Project Structure
 
 ```
 ├── app/                    # Next.js App Router pages
-│   └── (app)/              # Main application routes
-│       ├── agents/         # Agent management
-│       ├── invoices/       # Invoice management
-│       └── dashboard/      # User dashboard
-├── components/             # React components
+│   ├── (app)/              # Main application routes
+│   │   ├── agents/         # Agent management (create, edit, view)
+│   │   ├── invoices/       # Invoice management (create, pay, track)
+│   │   └── dashboard/      # User dashboard with stats
+│   └── page.tsx            # Landing page
+├── components/             # React components (40+ components)
+│   ├── ui/                 # Shadcn UI primitives
+│   ├── AgentCard.tsx       # Agent display with actions
+│   ├── EditAgentModal.tsx  # Agent editing modal
+│   ├── InvoiceDetailModal.tsx # Invoice details and payment
+│   └── ...
 ├── contracts/              # Solidity smart contracts
-├── hooks/                  # Custom React hooks
+│   └── AgentPay.sol        # Main contract (373 lines)
+├── hooks/                  # Custom React hooks (16 hooks)
+│   ├── useAgents.ts        # Fetch user agents
+│   ├── useCreateAgent.ts   # Create new agents
+│   ├── useUpdateAgent.ts   # Update agent with simulation
+│   ├── useDeleteAgent.ts   # Delete agent with simulation
+│   └── ...
 ├── lib/                    # Utilities and contract config
+│   └── contracts.ts        # Contract addresses and ABIs
 └── scripts/                # Deployment and automation scripts
+    ├── deploy.js           # Contract deployment
+    └── worker.js           # Payment execution worker
 ```
+
+## 🎯 Use Cases
+
+- **💼 Payroll Automation**: Pay contractors/employees on a weekly or monthly basis
+- **📺 Subscriptions**: Decentralized subscription billing for Web3 services
+- **🏠 Rent Payments**: Automated monthly rent in crypto
+- **💸 DCA (Dollar-Cost Averaging)**: Automated recurring investments
+- **🤝 Revenue Sharing**: Auto-distribute earnings to stakeholders
+
+## 🚧 Recent Updates
+
+- ✅ **Paused Agent Operations**: Edit and delete agents even when paused or terminated
+- ✅ **Transaction Simulation**: Pre-flight checks for all agent operations
+- ✅ **End Date Validation**: Smart minimum end dates based on payment interval
+- ✅ **Improved Error Handling**: Detailed error messages with simulation feedback
+- ✅ **UI Enhancements**: Better loading states and transaction feedback
 
 ---
 

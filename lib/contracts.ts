@@ -5,19 +5,21 @@ import { Address } from 'viem';
 export const AGENT_PAY_ADDRESS_SEPOLIA = "0x73B9105DF1D8E1A790ac999dbd5244AeF33527B7" as const;
 export const AGENT_PAY_DEPLOY_BLOCK_SEPOLIA = 33345633n;
 
-// Mainnet Deployment
-export const AGENT_PAY_ADDRESS_MAINNET = "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3" as const;
-export const AGENT_PAY_DEPLOY_BLOCK_MAINNET = 89887760n;
+// Mainnet Deployment (Disabled for hackathon demo)
+// export const AGENT_PAY_ADDRESS_MAINNET = "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3" as const;
+// export const AGENT_PAY_DEPLOY_BLOCK_MAINNET = 89887760n;
 
+// Testnet only for hackathon
 export const CONTRACT_CONFIG: Record<number, { address: Address; deployBlock: bigint }> = {
     5003: {
         address: AGENT_PAY_ADDRESS_SEPOLIA,
         deployBlock: AGENT_PAY_DEPLOY_BLOCK_SEPOLIA
     },
-    5000: {
-        address: AGENT_PAY_ADDRESS_MAINNET,
-        deployBlock: AGENT_PAY_DEPLOY_BLOCK_MAINNET
-    }
+    // Mainnet disabled for hackathon demo
+    // 5000: {
+    //     address: AGENT_PAY_ADDRESS_MAINNET,
+    //     deployBlock: AGENT_PAY_DEPLOY_BLOCK_MAINNET
+    // }
 };
 
 // Deprecated - Use CONTRACT_CONFIG[chainId] instead
