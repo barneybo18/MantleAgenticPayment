@@ -9,7 +9,20 @@ const CONTRACT_CONFIG = {
 };
 
 async function main() {
-    const [signer] = await hre.ethers.getSigners();
+    // Check for PRIVATE_KEY first
+    if (!process.env.PRIVATE_KEY) {
+        console.error("❌ PRIVATE_KEY environment variable is not set!");
+        console.error("   Please add PRIVATE_KEY as a GitHub secret.");
+        process.exit(1);
+    }
+
+    const signers = await hre.ethers.getSigners();
+    if (!signers || signers.length === 0) {
+        console.error("❌ No signers available. Check your PRIVATE_KEY.");
+        process.exit(1);
+    }
+    const signer = signers[0];
+
     const network = await hre.ethers.provider.getNetwork();
     const chainId = Number(network.chainId);
 
