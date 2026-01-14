@@ -30,23 +30,23 @@ function getMinEndDate(intervalSeconds: bigint): Date {
     const now = new Date();
     const interval = Number(intervalSeconds);
 
-    // Minute interval (60s) - can terminate after 2 minutes
+    // Minute interval - one can only set termination time after 2 minutes
     if (interval <= 60) {
         return new Date(now.getTime() + 2 * 60 * 1000);
     }
-    // Hourly interval (3600s) - can terminate after 1 hour (+ buffer)
+    // Hourly interval - one can only set termination time after 1 hour
     if (interval <= 3600) {
         return new Date(now.getTime() + 65 * 60 * 1000); // 1 hour 5 mins
     }
-    // Daily interval (86400s) - can terminate after 1 day
+    // Daily interval - one can only set termination time after 1 day
     if (interval <= 86400) {
         return new Date(now.getTime() + 24 * 60 * 60 * 1000);
     }
-    // Weekly interval (604800s) - can terminate after 8 days
+    // Weekly interval - one can only set termination time after 1 week
     if (interval <= 604800) {
         return new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000);
     }
-    // Monthly interval (~30 days) - can terminate after 31 days
+    // Monthly interval (~30 days) - one can only set termination time after 1 month
     return new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);
 }
 
@@ -95,7 +95,6 @@ export function EditAgentModal({ agent, isOpen, onClose, onUpdate }: EditAgentMo
         }
     }, [agent.endDate, minDateStr]);
 
-    // Handle success
     useEffect(() => {
         if (isSuccess && isSubmitting) {
             toast.success("Agent updated!", { description: "Termination date has been set." });
@@ -106,7 +105,6 @@ export function EditAgentModal({ agent, isOpen, onClose, onUpdate }: EditAgentMo
         }
     }, [isSuccess, isSubmitting, onUpdate, onClose, resetState]);
 
-    // Handle error
     useEffect(() => {
         if (error && isSubmitting) {
             toast.error("Failed to update agent", { description: error.message || "Transaction failed" });

@@ -1,7 +1,7 @@
 import { useWriteContract, useReadContract, useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { ERC20_ABI } from "@/lib/contracts";
 import { useState, useEffect } from "react";
-import { MaxUint256 } from "ethers"; // or just use BigInt
+import { MaxUint256 } from "ethers"; 
 
 export function useTokenApproval(tokenAddress: `0x${string}`, spenderAddress: `0x${string}`) {
     const { address: userAddress } = useAccount();

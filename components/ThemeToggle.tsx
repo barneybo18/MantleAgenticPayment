@@ -28,8 +28,7 @@ export function ThemeToggle() {
         );
     }
 
-    // Determine if we should show the dark state (Moon)
-    // Black mode and Dark (Navy) mode both count as 'dark' for the icon
+
     const isDark = resolvedTheme === "dark" || resolvedTheme === "black";
 
     return (
@@ -68,7 +67,6 @@ function SunWrapper({ isDark }: { isDark: boolean }) {
 }
 
 function MoonWrapper({ isDark }: { isDark: boolean }) {
-    // For Black mode, we might want a filled moon or just standard. sticking to standard for consistency in trigger.
     return (
         <Moon
             className={`absolute size-4 transition-all ${isDark ? "rotate-0 scale-100" : "-rotate-90 scale-0"}`}

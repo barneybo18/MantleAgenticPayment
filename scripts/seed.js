@@ -4,17 +4,12 @@ const { ethers } = require("hardhat");
 async function main() {
     console.log("🌱 Starting Seed Script...");
 
-    // Get the main account (User's wallet)
+    // Get the User's wallet
     const [user] = await ethers.getSigners();
     console.log(`👤 User Address: ${user.address}`);
 
     // Get Contract Address
-    // We assume the contract is already deployed and we want to interact with it.
-    // Ideally we fetch it from the deployment or lib/contracts.ts
-    // For now, I'll fetch the deployed instance if running on localhost, 
-    // or use the known address for Mantle Sepolia.
 
-    // CHANGE THIS IF YOU REDEPLOY
     const CONTRACT_ADDRESS = "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3";
 
     const agentPay = await ethers.getContractAt("AgentPay", CONTRACT_ADDRESS);
@@ -48,7 +43,7 @@ async function main() {
     const tempWallet = ethers.Wallet.createRandom().connect(provider);
     console.log(`   🤖 Temp Wallet: ${tempWallet.address}`);
 
-    // Fund temp wallet for gas (0.5 MNT)
+    // Fund temp wallet for gas
     console.log("   Funding temp wallet...");
     const fundTx = await user.sendTransaction({
         to: tempWallet.address,

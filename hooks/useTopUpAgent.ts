@@ -12,7 +12,6 @@ export function useTopUpAgent() {
     const { invalidateAll } = useInvalidateQueries();
     const [isTopping, setIsTopping] = useState(false);
 
-    // Invalidate queries when transaction succeeds
     useEffect(() => {
         if (isSuccess && isTopping) {
             console.log("Top up confirmed, invalidating queries...");
@@ -21,7 +20,6 @@ export function useTopUpAgent() {
         }
     }, [isSuccess, isTopping, invalidateAll]);
 
-    // Reset on error
     useEffect(() => {
         if (receiptError && isTopping) {
             setIsTopping(false);

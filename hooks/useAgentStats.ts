@@ -2,7 +2,7 @@ import { useAccount, usePublicClient, useChainId } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from '@/lib/contracts';
 
-// Max block range for Mantle RPC (limit is 10,000, use 9,000 for safety)
+
 const MAX_BLOCK_RANGE = 9000n;
 
 export function useAgentStats() {
@@ -22,7 +22,6 @@ export function useAgentStats() {
                 const currentBlock = await publicClient.getBlockNumber();
                 const allLogs: any[] = [];
 
-                // Fetch logs in chunks to avoid RPC block range limit
                 let fromBlock = config.deployBlock;
                 while (fromBlock <= currentBlock) {
                     const toBlock = fromBlock + MAX_BLOCK_RANGE > currentBlock

@@ -12,7 +12,6 @@ export function useToggleAgentStatus() {
     const { invalidateAll } = useInvalidateQueries();
     const [isToggling, setIsToggling] = useState(false);
 
-    // Invalidate queries when transaction succeeds
     useEffect(() => {
         if (isSuccess && isToggling) {
             console.log("Agent status toggle confirmed, invalidating queries...");
@@ -21,7 +20,6 @@ export function useToggleAgentStatus() {
         }
     }, [isSuccess, isToggling, invalidateAll]);
 
-    // Reset on error
     useEffect(() => {
         if (receiptError && isToggling) {
             setIsToggling(false);

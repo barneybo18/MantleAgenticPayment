@@ -4,13 +4,12 @@ import { useReadContract, useReadContracts, useChainId, useWatchContractEvent } 
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, Invoice, NATIVE_TOKEN } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 
-// Cache configuration - optimized for faster post-transaction updates
 const QUERY_CONFIG = {
-    staleTime: 5_000, // Data considered fresh for 5 seconds (faster updates after tx)
-    gcTime: 2 * 60_000, // Keep in cache for 2 minutes
-    refetchOnWindowFocus: true, // Refetch when tab regains focus
-    refetchOnMount: true, // Refetch on component mount
-    refetchOnReconnect: true, // Refetch on network reconnect
+    staleTime: 5_000, 
+    gcTime: 2 * 60_000, 
+    refetchOnWindowFocus: true, 
+    refetchOnMount: true, 
+    refetchOnReconnect: true,
 };
 
 export function useInvoices() {
@@ -60,7 +59,6 @@ export function useInvoices() {
     const invoices: Invoice[] = invoicesData
         ?.filter((r) => r.status === "success" && r.result)
         .map((r) => r.result as Invoice)
-        // Filter out cancelled invoices - contract sets amount=0 when cancelled
         .filter((inv) => inv.amount > 0n) || [];
 
     const refetch = () => {

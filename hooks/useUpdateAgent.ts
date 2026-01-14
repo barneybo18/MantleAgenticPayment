@@ -5,7 +5,6 @@ import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from "@/lib/contracts";
 import { useState, useEffect, useCallback } from "react";
 import { useInvalidateQueries } from "./useInvalidateQueries";
 
-// Helper to extract readable error message from contract revert
 function extractErrorMessage(error: unknown): string {
     const errorStr = String(error);
     if (errorStr.includes("Not owner")) return "You are not the owner of this agent";

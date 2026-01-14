@@ -4,7 +4,7 @@ const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
 
 // Network-specific contract addresses
 const CONTRACT_CONFIG = {
-    5003: "0x73B9105DF1D8E1A790ac999dbd5244AeF33527B7", // Mantle Sepolia - Updated 2026-01-12
+    5003: "0x250a83CC3Db28e0819b263c8E086F2d0d92a3E9f", // Mantle Sepolia
     5000: "0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3", // Mantle Mainnet
 };
 
@@ -77,7 +77,7 @@ async function main() {
                             console.log(`   Token: ${isNative ? "Native MNT" : agent.token}`);
                             console.log(`   Recipient: ${agent.to}`);
 
-                            // Check balance (native or token)
+                            // Check balance
                             if (balance >= agent.amount) {
                                 console.log(`   Balance OK (${hre.ethers.formatEther(balance)} ${balanceLabel}). Executing...`);
                                 try {
@@ -113,7 +113,6 @@ async function main() {
         } catch (error) {
             console.error("Loop error:", error.message);
 
-            // If rate limited (429), wait longer
             if (error.message.includes("429") || error.message.includes("Too Many Requests")) {
                 console.log("⚠️ Rate limited. Waiting 60 seconds...");
                 await new Promise(resolve => setTimeout(resolve, 60000));

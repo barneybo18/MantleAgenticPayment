@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, Bot, Menu } from "lucide-react";
+import { LayoutDashboard, FileText, Bot, Menu, History } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";

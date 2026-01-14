@@ -4,7 +4,7 @@ import { useAgents } from "@/hooks/useAgents";
 import { useAgentStats } from "@/hooks/useAgentStats";
 import { AgentCard } from "@/components/AgentCard";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Bot } from "lucide-react";
+import { Plus, Loader2, Bot, History } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAccount } from "wagmi";
@@ -35,12 +35,30 @@ export default function AgentsPage() {
         );
     }
 
-    // Filter out cancelled/deleted agents (isActive=false AND no balance)
-    const isCancelled = (a: typeof agents[0]) => !a.isActive && a.balance === 0n && a.tokenBalance === 0n;
-    const visibleAgents = agents.filter(a => !isCancelled(a));
+    // Filter out deleted agents: isActive=false AND 0 balance (contract marks them this way)
+    // Whether they paid or not, if balance is 0 and isActive is false, they're deleted
+    const isDeleted = (a: typeof agents[0]) => {
+        const hasNoBalance = a.balance === 0n && a.tokenBalance === 0n;
+        return !a.isActive && hasNoBalance;
+    };
 
-    const activeAgents = visibleAgents.filter(a => a.isActive);
+    // Sort by ID descending (newest/latest first) and filter deleted
+    const visibleAgents = agents
+        .filter(a => !isDeleted(a))
+        .sort((a, b) => Number(b.id - a.id));
+
+    // Check if agent is completed (still active but ran out of funds - will be paused by worker)
+    // Note: Once truly deleted via UI, they have isActive=false so won't show here
+    const isCompleted = (a: typeof agents[0]) => {
+        const hasNoBalance = a.balance === 0n && a.tokenBalance === 0n;
+        const hasPaid = (stats[a.id.toString()] || 0n) > 0n;
+        // Only show as "completed" if still somehow active with 0 balance
+        return a.isActive && hasNoBalance && hasPaid;
+    };
+
+    const activeAgents = visibleAgents.filter(a => a.isActive && !isCompleted(a));
     const pausedAgents = visibleAgents.filter(a => !a.isActive);
+    const completedAgents = visibleAgents.filter(a => isCompleted(a));
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -51,12 +69,20 @@ export default function AgentsPage() {
                         Deploy autonomous agents to execute recurring payments on your behalf.
                     </p>
                 </div>
-                <Button asChild>
-                    <Link href="/agents/new">
-                        <Plus className="mr-2 size-4" />
-                        New Agent
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" asChild>
+                        <Link href="/agents/history">
+                            <History className="mr-2 size-4" />
+                            History
+                        </Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/agents/new">
+                            <Plus className="mr-2 size-4" />
+                            New Agent
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <Tabs defaultValue="all" className="w-full">
@@ -65,6 +91,7 @@ export default function AgentsPage() {
                         <TabsTrigger value="all">All ({visibleAgents.length})</TabsTrigger>
                         <TabsTrigger value="active">Active ({activeAgents.length})</TabsTrigger>
                         <TabsTrigger value="paused">Paused ({pausedAgents.length})</TabsTrigger>
+                        <TabsTrigger value="completed">Completed ({completedAgents.length})</TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -173,6 +200,39 @@ export default function AgentsPage() {
                                 ) : (
                                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                         {pausedAgents.map((agent) => (
+                                            <motion.div
+                                                key={agent.id.toString()}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                            >
+                                                <AgentCard
+                                                    agent={agent}
+                                                    onUpdate={refetch}
+                                                    totalSent={stats[agent.id.toString()] || 0n}
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="completed" className="space-y-4">
+                                {completedAgents.length === 0 ? (
+                                    <div className="text-center py-12 space-y-4 border-2 border-dashed rounded-lg">
+                                        <Image
+                                            src="/bogent-empty.png"
+                                            alt="No completed agents"
+                                            width={100}
+                                            height={100}
+                                            className="mx-auto"
+                                        />
+                                        <p className="text-muted-foreground">No completed agents yet. Completed agents are those that have paid all their allocated funds.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                        {completedAgents.map((agent) => (
                                             <motion.div
                                                 key={agent.id.toString()}
                                                 layout

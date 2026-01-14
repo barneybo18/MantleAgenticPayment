@@ -5,13 +5,12 @@ import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN, UserStats } from "@/lib/c
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 
-// Cache configuration to prevent excessive refetching
 const QUERY_CONFIG = {
-    staleTime: 30_000, // Data considered fresh for 30 seconds
-    gcTime: 5 * 60_000, // Keep in cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch when tab regains focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    refetchOnReconnect: false, // Don't refetch on network reconnect
+    staleTime: 30_000, 
+    gcTime: 5 * 60_000, 
+    refetchOnWindowFocus: false, 
+    refetchOnMount: false, 
+    refetchOnReconnect: false,
 };
 
 export function useUserStats() {

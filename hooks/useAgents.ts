@@ -6,8 +6,8 @@ import { useAccount } from "wagmi";
 
 // Cache configuration - optimized for faster reactivity after transactions
 const QUERY_CONFIG = {
-    staleTime: 10_000,           // 10 seconds (reduced from 30)
-    gcTime: 2 * 60_000,          // 2 minutes (reduced from 5)
+    staleTime: 10_000,           // 10 seconds 
+    gcTime: 2 * 60_000,          // 2 minutes 
     refetchOnWindowFocus: true,  // Enable for immediate updates when tab regains focus
     refetchOnMount: true,        // Enable for fresh data on component mount
     refetchOnReconnect: true,    // Enable for updates after network reconnect
@@ -53,7 +53,7 @@ export function useAgents() {
         }
     };
 
-    // Real-time event listeners (only watch if valid address)
+    // Real-time event listeners 
     useWatchContractEvent({
         address: isContractAvailable ? contractAddress : undefined,
         abi: AGENT_PAY_ABI,

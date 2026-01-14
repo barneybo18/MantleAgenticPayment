@@ -1,20 +1,20 @@
 "use client";
 
-import { ScheduledPayment, NATIVE_TOKEN, SUPPORTED_TOKENS, CONTRACT_CONFIG } from "@/lib/contracts"; // Added CONTRACT_CONFIG
+import { ScheduledPayment, NATIVE_TOKEN, SUPPORTED_TOKENS, CONTRACT_CONFIG } from "@/lib/contracts";
 import { formatEther, formatUnits, parseUnits } from "viem";
 import { formatId } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bot, RefreshCw, Trash2, Wallet, Plus, Loader2, Pause, Play, Coins, AlertCircle, Pencil, Calendar } from "lucide-react";
+import { Bot, RefreshCw, Trash2, Wallet, Plus, Loader2, Pause, Play, Coins, AlertCircle, Pencil, Calendar, CheckCircle2, PartyPopper } from "lucide-react";
 import Link from "next/link";
 import { ClientDate } from "@/components/ClientDate";
 import { useState, useEffect } from "react";
 import { useTopUpAgent } from "@/hooks/useTopUpAgent";
 import { useDeleteAgent } from "@/hooks/useDeleteAgent";
 import { useToggleAgentStatus } from "@/hooks/useToggleAgentStatus";
-import { useChainId } from "wagmi"; // Added useChainId
-import { useTokenApproval } from "@/hooks/useTokenApproval"; // Added useTokenApproval
+import { useChainId } from "wagmi";
+import { useTokenApproval } from "@/hooks/useTokenApproval";
 import {
     Dialog,
     DialogContent,
@@ -70,15 +70,17 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     const isNative = agent.token === NATIVE_TOKEN;
 
     // Check if agent is terminated (Inactive + Past End Date)
-    // We use a safe client-side check. If contract says !isActive and date is past, it's done.
     const now = BigInt(Math.floor(Date.now() / 1000));
     const isTerminated = !agent.isActive && agent.endDate > 0n && now >= agent.endDate;
+
+    // Check if agent is completed (balance fully exhausted - paid all allocated tokens)
+    const displayBalance = isNative ? agent.balance : agent.tokenBalance;
+    const isCompleted = displayBalance === 0n && !agent.isActive && totalSent > 0n;
 
     // Token Approval for Top Up
     const config = CONTRACT_CONFIG[chainId];
     const contractAddress = config?.address;
 
-    // We only need approval if it's ERC20
     const { allowance, approveToken, isPending: isApprovePending } = useTokenApproval(
         agent.token as `0x${string}`,
         contractAddress
@@ -93,15 +95,12 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
             toast.success("Agent deleted!", { description: "Funds have been refunded to your wallet." });
             setIsDeleting(false);
             resetDeleteState();
-            // Immediate refetch
             onUpdate();
         }
     }, [isDeleteSuccess, isDeleting, onUpdate, resetDeleteState]);
 
-    // Handle Restart Guide Flow
     useEffect(() => {
         if (showRestartGuide && agent.isActive) {
-            // Agent just became active after restart click
             setShowRestartGuide(false);
             setIsEditOpen(true);
             toast.info("Agent Resumed", { description: "Now remove the termination date to keep it running!" });
@@ -129,7 +128,6 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
             setIsTopUpOpen(false);
             setTopUpAmount("");
             toast.success("Top up successful!");
-            // Refetch immediately
             onUpdate();
         } catch (e) {
             console.error(e);
@@ -146,11 +144,10 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
     const handleToggleStatus = async () => {
         try {
             if (isTerminated) {
-                setShowRestartGuide(true); // Flag to open edit modal after success
+                setShowRestartGuide(true);
             }
             await toggleAgentStatus(agent.id, !agent.isActive);
             toast.success(agent.isActive ? "Agent paused" : "Agent resumed");
-            // Refetch immediately via hook update
             onUpdate();
         } catch (e) {
             console.error(e);
@@ -167,7 +164,6 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
             setIsDeleting(false);
             toast.error("Failed to delete agent", { description: result.error || "Transaction was rejected" });
         }
-        // Success/error will be handled by useEffect when transaction confirms
     };
 
     const formatInterval = (seconds: bigint) => {
@@ -178,13 +174,49 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
         return `${hours / 24} days`;
     };
 
-    const displayBalance = isNative ? agent.balance : agent.tokenBalance;
+    // Get status info
+    const getStatusInfo = () => {
+        if (isCompleted) {
+            return {
+                label: "Completed",
+                variant: "default" as const,
+                className: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30",
+                icon: <CheckCircle2 className="size-3 mr-1" />
+            };
+        }
+        if (isTerminated) {
+            return {
+                label: "Terminated",
+                variant: "destructive" as const,
+                className: "",
+                icon: null
+            };
+        }
+        if (agent.isActive) {
+            return {
+                label: "Active",
+                variant: "default" as const,
+                className: "",
+                icon: null
+            };
+        }
+        return {
+            label: "Paused",
+            variant: "secondary" as const,
+            className: "",
+            icon: null
+        };
+    };
+
+
+    const statusInfo = getStatusInfo();
 
     return (
-        <Card className={`relative overflow-hidden border-2 transition-colors ${isTerminated ? 'border-orange-500/20 bg-orange-50/10' : 'hover:border-primary/50'}`}>
+        <Card className={`relative overflow-hidden border-2 transition-colors ${isCompleted ? 'border-emerald-500/30 bg-emerald-500/5' : isTerminated ? 'border-orange-500/20 bg-orange-50/10' : 'hover:border-primary/50'}`}>
             <div className="absolute top-0 right-0 p-4">
-                <Badge variant={isTerminated ? "destructive" : (agent.isActive ? "default" : "secondary")}>
-                    {isTerminated ? "Terminated" : (agent.isActive ? "Active" : "Paused")}
+                <Badge variant={statusInfo.variant} className={statusInfo.className}>
+                    {statusInfo.icon}
+                    {statusInfo.label}
                 </Badge>
             </div>
 
@@ -215,6 +247,13 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                     </div>
 
                     <div className="h-px bg-border" />
+
+                    {isCompleted && (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <PartyPopper className="size-4" />
+                            <span className="text-sm font-medium">All payments completed!</span>
+                        </div>
+                    )}
 
                     <div className="flex justify-between items-center">
                         <span className="text-sm text-neutral-500">Total Paid</span>
@@ -293,11 +332,7 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                                     variant="outline"
                                     size="icon"
                                     onClick={() => setIsEditOpen(true)}
-                                    disabled={!agent.isActive && !isTerminated} // Allow edit if active OR if we want to show them they can't edit? No, contract blocks !isActive.
-                                // Wait, if isTerminated, !isActive is true. So disabled. 
-                                // We ONLY want to enable Edit if isActive.
-                                // But for Terminated, we force them to Resume first (via Restart button).
-                                // So Edit SHOULD be disabled for isTerminated.
+                                    disabled={!agent.isActive && !isTerminated}
                                 >
                                     <Pencil className="size-4" />
                                 </Button>
@@ -371,7 +406,7 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button
-                            variant="destructive"
+                            variant={isCompleted ? "outline" : "destructive"}
                             size="icon"
                             disabled={isDeletePending}
                         >
@@ -380,15 +415,23 @@ export function AgentCard({ agent, onUpdate, totalSent = 0n }: AgentCardProps) {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Agent?</AlertDialogTitle>
+                            <AlertDialogTitle>
+                                {isCompleted ? "Delete Completed Agent?" : "Delete Agent?"}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the agent and refund all remaining funds ({formatUnits(displayBalance, decimals)} {symbol}) to your wallet.
+                                {isCompleted
+                                    ? "This agent has finished all its payments. Deleting it will remove it permanently from your dashboard."
+                                    : `This will permanently delete the agent and refund all remaining funds (${formatUnits(displayBalance, decimals)} ${symbol}) to your wallet.`
+                                }
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete & Refund
+                            <AlertDialogAction
+                                onClick={handleDelete}
+                                className={isCompleted ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+                            >
+                                {isCompleted ? "Delete Agent" : "Delete & Refund"}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

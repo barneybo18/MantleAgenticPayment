@@ -2,7 +2,7 @@ import { usePublicClient, useChainId } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN } from '@/lib/contracts';
 
-// Max block range for Mantle RPC (limit is 10,000, use 9,000 for safety)
+// Max block range for Mantle RPC
 const MAX_BLOCK_RANGE = 9000n;
 
 export interface ExecutionEvent {
@@ -22,7 +22,6 @@ export function useAgentHistory(agentId: bigint | undefined) {
     useEffect(() => {
         const config = CONTRACT_CONFIG[chainId];
         if (agentId === undefined || !publicClient || !config || config.address === NATIVE_TOKEN) {
-            // No contract on this chain yet or invalid config
             setHistory([]);
             return;
         }
@@ -33,7 +32,6 @@ export function useAgentHistory(agentId: bigint | undefined) {
                 const currentBlock = await publicClient.getBlockNumber();
                 const allLogs: any[] = [];
 
-                // Fetch logs in chunks to avoid RPC block range limit
                 let fromBlock = config.deployBlock;
                 while (fromBlock <= currentBlock) {
                     const toBlock = fromBlock + MAX_BLOCK_RANGE > currentBlock
@@ -57,7 +55,6 @@ export function useAgentHistory(agentId: bigint | undefined) {
                     fromBlock = toBlock + 1n;
                 }
 
-                // Fetch timestamps
                 // Optimization: Deduplicate block numbers to reduce requests
                 const uniqueBlockNumbers = Array.from(new Set(allLogs.map(l => l.blockNumber)));
                 const blockPromises = uniqueBlockNumbers.map(bn => publicClient.getBlock({ blockNumber: bn }));

@@ -5,13 +5,12 @@ import { AGENT_PAY_ABI, CONTRACT_CONFIG, NATIVE_TOKEN, ScheduledPayment } from "
 import { useAccount } from "wagmi";
 import { parseEther } from "viem";
 
-// Cache configuration - optimized for faster reactivity after transactions
 const QUERY_CONFIG = {
-    staleTime: 10_000,           // 10 seconds (reduced from 30)
-    gcTime: 2 * 60_000,          // 2 minutes (reduced from 5)
-    refetchOnWindowFocus: true,  // Enable for immediate updates when tab regains focus
-    refetchOnMount: true,        // Enable for fresh data on component mount
-    refetchOnReconnect: true,    // Enable for updates after network reconnect
+    staleTime: 10_000,           
+    gcTime: 2 * 60_000,          
+    refetchOnWindowFocus: true,  
+    refetchOnMount: true,        
+    refetchOnReconnect: true,    
 };
 
 export function useScheduledPayments() {

@@ -12,7 +12,6 @@ import {
     trustWallet,
     ledgerWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-// Mainnet disabled for hackathon demo - testnet only
 import { defineChain } from 'viem';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, http } from 'wagmi';
@@ -21,7 +20,6 @@ import { WelcomePopup } from './WelcomePopup';
 import { LoadingPopup } from './LoadingPopup';
 import { Suspense } from 'react';
 
-// Define Mantle Sepolia with correct RPC
 const mantleSepolia = defineChain({
     id: 5003,
     name: 'Mantle Sepolia',
@@ -45,7 +43,7 @@ const { wallets } = getDefaultWallets();
 
 const config = getDefaultConfig({
     appName: 'Bogent',
-    projectId: 'YOUR_PROJECT_ID', // Replace with WalletConnect project ID
+    projectId: '3fcc6bba6f1de962d911bb5b5c3dba68',
     wallets: [
         ...wallets,
         {
@@ -53,7 +51,7 @@ const config = getDefaultConfig({
             wallets: [argentWallet, trustWallet, ledgerWallet],
         },
     ],
-    chains: [mantleSepolia],
+    chains: [ mantleSepolia],
     transports: {
         [mantleSepolia.id]: http('https://rpc.sepolia.mantle.xyz'),
     },

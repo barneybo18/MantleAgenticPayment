@@ -1,8 +1,16 @@
+<p align="center">
+  <img src="public/bogent-banner.png" alt="BOGENT - Autonomous AI Payments on Mantle" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://www.mantle.xyz/"><img src="https://img.shields.io/badge/Network-Mantle-green" alt="Mantle Network"></a>
+  <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License"></a>
+  <a href="https://bogent.vercel.app"><img src="https://img.shields.io/badge/Status-Live-success" alt="Status"></a>
+  <a href="https://mantlescan.xyz/address/0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3"><img src="https://img.shields.io/badge/Contract-Mainnet-brightgreen" alt="Mainnet Contract"></a>
+</p>
+
 # 🤖 BOGENT - Autonomous Payments on Mantle
 
-![Mantle Network](https://img.shields.io/badge/Network-Mantle-green) 
-![License](https://img.shields.io/badge/License-MIT-blue)
-![Status](https://img.shields.io/badge/Status-Hackathon_MVP-orange)
 
 **BOGENT** is a decentralized agentic payment platform built on the **Mantle Network**. It empowers users with AI-driven "agents" for autonomous payment handling, recurring scheduling, and seamless invoice management.
 

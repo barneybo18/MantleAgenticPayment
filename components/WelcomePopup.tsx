@@ -23,24 +23,19 @@ export function WelcomePopup() {
     const pathname = usePathname();
     const { isConnected } = useAccount();
 
-    // Wait for client-side hydration before accessing sessionStorage
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
     useEffect(() => {
-        // Don't run until component is mounted (client-side)
         if (!isMounted) return;
 
-        // Only show on dashboard routes (not landing page)
         if (pathname === "/" || pathname === "") {
             return;
         }
 
-        // Check sessionStorage to persist "hasShown" across page refreshes
         const hasShownThisSession = sessionStorage.getItem(STORAGE_KEY);
 
-        // Show popup if wallet is not connected and we haven't shown it yet this session
         if (!isConnected && !hasShownThisSession) {
             setIsOpen(true);
         }
@@ -48,7 +43,6 @@ export function WelcomePopup() {
 
     const handleClose = () => {
         setIsOpen(false);
-        // Mark as shown when user closes it
         sessionStorage.setItem(STORAGE_KEY, "true");
     };
 

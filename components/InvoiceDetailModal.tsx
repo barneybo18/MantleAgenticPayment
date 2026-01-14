@@ -99,7 +99,6 @@ export function InvoiceDetailModal({
 
     const status = getStatus();
 
-    // Parse metadata for name if stored as JSON
     const parseMetadata = () => {
         try {
             const parsed = JSON.parse(invoice.metadataHash);
@@ -261,7 +260,6 @@ export function InvoiceDetailModal({
                     url: getShareUrl(),
                 });
             } catch (e) {
-                // User cancelled or error
             }
         }
     };
@@ -306,12 +304,7 @@ export function InvoiceDetailModal({
                         </p>
                     </div>
 
-                    {/* Sender Info - EXISTING CODE ... */}
-                    {/* (Omitted unrelated sections for brevity in this replace block if possible, but replace_file_content needs contiguous block) */}
-                    {/* To be safe, I'm replacing from share logic down to end of file, assuming the middle content is unchanged or I need to include it. */}
-                    {/* Actually, user didn't ask to change the middle. I will use a larger replacement block to include the middle or just replace the functions and the hidden div. */}
-                    {/* Strategy: Replace the Logic functions, then the hidden div separately if needed. But replace_file_content only does one block. */}
-                    {/* I will replace from downloadAsImage downwards to catch the poster HTML changes too. */}
+                    {/* Sender Info */}      
 
                     <div className="space-y-4">
                         <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
@@ -558,13 +551,12 @@ export function InvoiceDetailModal({
                         </Button>
                     </div>
 
-                    {/* Hidden Poster for Rendering - ULTRA SAFE MODE */}
-                    <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+=                    <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
                         <div
                             ref={posterRef}
                             data-poster-root
                             style={{
-                                backgroundColor: '#0f172a', // Flat dark blue/slate
+                                backgroundColor: '#0f172a', 
                                 color: '#ffffff',
                                 width: '600px',
                                 height: '800px',

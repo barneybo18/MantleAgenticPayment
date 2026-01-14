@@ -25,7 +25,7 @@ async function main() {
 
     await agentPay.waitForDeployment();
 
-    // Fetch the transaction receipt to get the block number (with retries)
+    // Fetch the transaction receipt to get the block number
     const txHash = agentPay.deploymentTransaction().hash;
     console.log("Transaction hash:", txHash);
     console.log("Waiting for confirmation...");

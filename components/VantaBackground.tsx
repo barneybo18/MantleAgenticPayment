@@ -21,8 +21,8 @@ export function VantaBackground({ className }: { className?: string }) {
           minWidth: 200.00,
           scale: 1.00,
           scaleMobile: 0.5,
-          color: 0x4a4a4a, // Subtle gray lines
-          backgroundColor: 0x0a0a0a, // Match page background
+          color: 0x4a4a4a,
+          backgroundColor: 0x0a0a0a, 
           points: 10.00,
           maxDistance: 20.00,
           spacing: 16.00,

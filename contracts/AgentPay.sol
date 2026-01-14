@@ -266,8 +266,8 @@ contract AgentPay is Ownable, ReentrancyGuard {
     function cancelScheduledPayment(uint256 _id) external nonReentrant {
         ScheduledPayment storage payment = scheduledPayments[_id];
         require(payment.from == msg.sender, "Not owner");
-        // Removed isActive check: Allow claiming refunds from paused/terminated agents
-        require(payment.balance > 0 || payment.tokenBalance > 0, "No funds to refund");
+        // Removed: require(payment.balance > 0 || payment.tokenBalance > 0, "No funds to refund");
+        // Allow deletion even with 0 balance (for completed agents)
         
         payment.isActive = false;
         

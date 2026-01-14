@@ -115,7 +115,7 @@ export default function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
                 <div className="flex items-center gap-2">
-                    <Button asChild size="sm" className="sm:size-default">
+                    <Button asChild size="sm" className="sm:size-default"> 
                         <Link href="/invoices/new">Create Invoice</Link>
                     </Button>
                 </div>

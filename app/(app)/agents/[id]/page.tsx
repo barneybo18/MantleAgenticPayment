@@ -50,7 +50,7 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
     const [isDeleting, setIsDeleting] = useState(false);
     const chainId = useChainId();
 
-    // Handle successful deletion - redirect to agents page
+    // Handle successful deletion
     useEffect(() => {
         if (isDeleteSuccess && isDeleting) {
             toast.success("Agent deleted!", { description: "Funds have been refunded to your wallet." });
@@ -60,7 +60,6 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
         }
     }, [isDeleteSuccess, isDeleting, router, resetDeleteState]);
 
-    // Handle delete error
     useEffect(() => {
         if (deleteError && isDeleting) {
             toast.error("Failed to delete agent", { description: deleteError.message || "Transaction failed" });
@@ -125,7 +124,6 @@ export default function AgentDetailsPage({ params }: { params: Promise<{ id: str
 
     const totalSpent = history.reduce((acc, curr) => acc + curr.amount, 0n);
 
-    // Pagination Logic
     const totalPages = Math.ceil(history.length / itemsPerPage);
     const currentHistoryPage = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     const displayedHistory = history.slice(0, 5); // Show first 5 on main page
