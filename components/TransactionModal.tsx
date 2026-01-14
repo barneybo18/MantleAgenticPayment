@@ -150,8 +150,11 @@ export function TransactionModal({
                             Cancel
                         </Button>
                     )}
-                    {state === 'success' && (
-                        <Button onClick={onSuccessAction || onClose}>
+                    {state === 'success' && onSuccessAction && (
+                        <Button onClick={() => {
+                            onClose();
+                            onSuccessAction();
+                        }}>
                             {successActionLabel}
                         </Button>
                     )}

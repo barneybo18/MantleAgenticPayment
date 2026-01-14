@@ -57,8 +57,13 @@ export default function NewAgentPage() {
     const depositAmountBigInt = initialDeposit ? parseUnits(initialDeposit, selectedToken.decimals) : 0n;
     const needsApproval = !isNative && depositAmountBigInt > 0n && allowance < depositAmountBigInt;
 
+    // Track if modal was manually dismissed
+    const [dismissed, setDismissed] = useState(false);
+
     // Watch for transaction state changes
     useEffect(() => {
+        if (dismissed) return;
+
         if (isPending && txState === 'confirming') {
             setTxState('pending');
         }
@@ -68,9 +73,10 @@ export default function NewAgentPage() {
                 description: "Your payment agent is now active."
             });
         }
-    }, [isPending, isSuccess, hash, txState]);
+    }, [isPending, isSuccess, hash, txState, dismissed]);
 
     useEffect(() => {
+        if (dismissed) return;
         if (error) {
             setTxState('error');
             setTxError(error.message || "Transaction failed");
@@ -78,7 +84,7 @@ export default function NewAgentPage() {
                 description: error.message?.slice(0, 100)
             });
         }
-    }, [error]);
+    }, [error, dismissed]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -104,6 +110,7 @@ export default function NewAgentPage() {
     };
 
     const handleCancel = () => {
+        setDismissed(true);
         setTxState('idle');
         setTxError(undefined);
     };

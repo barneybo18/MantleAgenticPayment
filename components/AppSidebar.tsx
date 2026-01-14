@@ -49,15 +49,17 @@ export function MobileMenuTrigger() {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
                 <SheetHeader className="p-4 border-b">
-                    <SheetTitle className="flex items-center gap-2">
-                        <Image
-                            src="/bogent-logo.png"
-                            alt="Bogent"
-                            width={32}
-                            height={32}
-                            className="rounded"
-                        />
-                        <span>Bogent</span>
+                    <SheetTitle>
+                        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <Image
+                                src="/bogent-logo.png"
+                                alt="Bogent"
+                                width={32}
+                                height={32}
+                                className="rounded"
+                            />
+                            <span>Bogent</span>
+                        </Link>
                     </SheetTitle>
                 </SheetHeader>
                 <nav className="grid gap-1 p-4">
@@ -93,7 +95,7 @@ export function AppSidebar() {
 
     return (
         <div className="hidden md:flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
-            <div className="p-4 border-b flex items-center gap-2">
+            <Link href="/" className="p-4 border-b flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <Image
                     src="/bogent-logo.png"
                     alt="Bogent"
@@ -102,7 +104,7 @@ export function AppSidebar() {
                     className="rounded"
                 />
                 <span className="font-bold text-lg">Bogent</span>
-            </div>
+            </Link>
             <div className="flex-1 py-4">
                 <nav className="grid gap-1 px-2">
                     {items.map((item) => (
