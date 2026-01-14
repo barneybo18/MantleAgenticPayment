@@ -44,10 +44,11 @@
 
 ## 📜 Smart Contracts
 
+> **Note**: Currently deployed on **Testnet only**. Mainnet deployment coming soon.
+
 | Network | Address | Explorer |
 |---------|---------|----------|
-| **Mantle Mainnet** | `0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3` | [View](https://mantlescan.xyz/address/0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3) |
-| **Mantle Sepolia** | `0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8` | [View](https://sepolia.mantlescan.xyz/address/0xc66bf8Cb3572d6dE4f47B4775997070606f32Fd8) |
+| **Mantle Sepolia** | `0x250a83CC3Db28e0819b263c8E086F2d0d92a3E9f` | [View](https://sepolia.mantlescan.xyz/address/0x250a83CC3Db28e0819b263c8E086F2d0d92a3E9f) |
 
 ### Contract Features
 
@@ -95,24 +96,17 @@ The `AgentPay.sol` smart contract provides:
 The worker script executes due payments automatically:
 
 ```bash
-# For Mainnet
-npx hardhat run scripts/worker.js --network mantle
-
-# For Testnet
 npx hardhat run scripts/worker.js --network mantleSepolia
 ```
 
 ## 🧪 Deployment
 
-To deploy the smart contracts:
+To deploy the smart contracts to testnet:
 
 ```bash
-# Deploy to Mainnet
-npx hardhat run scripts/deploy.js --network mantle
-
-# Deploy to Sepolia Testnet
 npx hardhat run scripts/deploy.js --network mantleSepolia
 ```
+
 
 ## 🔐 Security
 
