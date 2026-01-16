@@ -6,7 +6,7 @@
   <a href="https://www.mantle.xyz/"><img src="https://img.shields.io/badge/Network-Mantle-green" alt="Mantle Network"></a>
   <a href="#"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License"></a>
   <a href="https://bogent.vercel.app"><img src="https://img.shields.io/badge/Status-Live-success" alt="Status"></a>
-  <a href="https://mantlescan.xyz/address/0x5dB9f58162feE7d957DF9E2f9112b4BF5D2a20d3"><img src="https://img.shields.io/badge/Contract-Mainnet-brightgreen" alt="Mainnet Contract"></a>
+  <a href="https://sepolia.mantlescan.xyz/address/0x250a83CC3Db28e0819b263c8E086F2d0d92a3E9f"><img src="https://img.shields.io/badge/Contract-Sepolia-orange" alt="Sepolia Contract"></a>
 </p>
 
 # 🤖 BOGENT - Autonomous Payments on Mantle
@@ -19,13 +19,13 @@
 - **🧾 Decentralized Invoicing**: Create, track, and pay on-chain invoices with full transparency.
 - **🤖 Autonomous Agents**: Configure "agents" to handle recurring payments (payroll, subscriptions) automatically.
 - **💰 Funded Agents**: Agents hold funds directly (MNT or ERC20 tokens) for trustless execution.
-- **⚡ Multi-Token Support**: Native **$MNT**, **USDT**, **USDC**, **mETH**, **cmETH**, **WETH** - network-aware token selection.
+- **⚡ Multi-Token Support**: Native **$MNT**, **USDT**, **USDC**, **mETH**, **cmETH**, **WETH** - network-aware token selection.(coming on mainnet)
 - **📊 Interactive Dashboard**: Click stat cards to drill down into payments received, pending invoices, and wallet details.
 - **🔄 Pause/Resume**: Full control over your agents with one-click pause and resume.
 - **✏️ Edit Paused Agents**: Update or delete agents even when they are paused or terminated.
 - **⏱️ Scheduled Termination**: Set end dates for agents to auto-terminate at a specific time.
 - **🔮 Transaction Simulation**: Pre-flight transaction checks for better error handling and UX.
-- **🕸️ Network Aware**: Automatically detects Mainnet/Testnet and uses the correct contract + tokens.
+- **🕸️ Testnet Ready**: Deployed on Mantle Sepolia testnet with full token support.
 - **📱 Fully Responsive**: Mobile-first design that works beautifully on all screen sizes.
 - **🔔 Transaction Feedback**: Real-time toast notifications and transaction modals with Mantlescan links.
 
@@ -44,7 +44,7 @@
 
 ## 📜 Smart Contracts
 
-> **Note**: Currently deployed on **Testnet only**. Mainnet deployment coming soon.
+> **Note**: Currently deployed on **Mantle Sepolia Testnet**.
 
 | Network | Address | Explorer |
 |---------|---------|----------|

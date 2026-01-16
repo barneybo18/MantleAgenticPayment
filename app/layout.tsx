@@ -57,7 +57,7 @@ export const metadata: Metadata = {
       "Deploy self-funded AI agents that automatically execute recurring crypto payments. Trustless automation for payroll, subscriptions, and rent on Mantle Network.",
     images: [
       {
-        url: "/bogent-mascot.png",
+        url: "/icon.png",
         width: 1200,
         height: 630,
         alt: "BOGENT - Autonomous Payment Agents",
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     title: "BOGENT - Autonomous AI Payment Agents",
     description:
       "Self-funded AI agents for recurring crypto payments on Mantle. Ultra-low fees, fully trustless.",
-    images: ["/bogent-mascot.png"],
+    images: ["/icon.png"],
     creator: "@oboh_banny18",
   },
 
@@ -90,9 +90,9 @@ export const metadata: Metadata = {
 
   // Icons
   icons: {
-    icon: "/bogent-logo.png",
-    shortcut: "/bogent-logo.png",
-    apple: "/bogent-logo.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 
   // App Manifest
